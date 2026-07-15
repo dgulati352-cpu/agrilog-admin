@@ -1,0 +1,153 @@
+mutation CreateFarmer @auth(level: USER) {
+  farmer_insert(data: {
+    id_expr: "auth.uid",
+    name: "John Doe",
+    email: "john@example.com",
+    farmName: "Green Acres"
+  })
+}
+
+mutation CreatePlot @auth(level: USER) {
+  plot_insert(data: {
+    plotName: "North Field",
+    sizeInAcres: 10.5,
+    farmer: { id_expr: "auth.uid" }
+  })
+}
+
+mutation CreateTask @auth(level: USER) {
+  task_insert(data: {
+    taskName: "Planting",
+    dueDate_time: { now: true },
+    status: "Pending",
+    plot: { id: "00000000-0000-0000-0000-000000000000" }
+  })
+}
+
+mutation CreateHarvest @auth(level: USER) {
+  harvest_insert(data: {
+    cropName: "Corn",
+    quantity: 500.0,
+    harvestDate_date: { today: true },
+    plot: { id: "00000000-0000-0000-0000-000000000000" }
+  })
+}
+
+mutation CreateInventory @auth(level: USER) {
+  inventory_insert(data: {
+    itemName: "Fertilizer",
+    quantity: 100.0,
+    unit: "kg",
+    farmer: { id_expr: "auth.uid" }
+  })
+}
+
+mutation DeleteFarmer @auth(level: USER) {
+  farmer_delete(key: { id_expr: "auth.uid" })
+}
+
+mutation DeletePlot @auth(level: USER) {
+  plot_delete(id: "00000000-0000-0000-0000-000000000000")
+}
+
+mutation DeleteTask @auth(level: USER) {
+  task_delete(id: "00000000-0000-0000-0000-000000000000")
+}
+
+mutation DeleteHarvest @auth(level: USER) {
+  harvest_delete(id: "00000000-0000-0000-0000-000000000000")
+}
+
+mutation DeleteInventory @auth(level: USER) {
+  inventory_delete(id: "00000000-0000-0000-0000-000000000000")
+}
+
+mutation UpdateFarmer @auth(level: USER) {
+  farmer_update(key: { id_expr: "auth.uid" }, data: { farmName: "Updated Farm Name" })
+}
+
+mutation UpdatePlot @auth(level: USER) {
+  plot_update(id: "00000000-0000-0000-0000-000000000000", data: { currentCrop: "Soy" })
+}
+
+mutation UpdateTask @auth(level: USER) {
+  task_update(id: "00000000-0000-0000-0000-000000000000", data: { status: "Completed" })
+}
+
+mutation UpdateHarvest @auth(level: USER) {
+  harvest_update(id: "00000000-0000-0000-0000-000000000000", data: { marketPrice: 200.0 })
+}
+
+mutation UpdateInventory @auth(level: USER) {
+  inventory_update(id: "00000000-0000-0000-0000-000000000000", data: { quantity: 150.0 })
+}
+
+query GetFarmer @auth(level: USER) {
+  farmer(key: { id_expr: "auth.uid" }) {
+    name
+    farmName
+  }
+}
+
+query GetPlot @auth(level: USER) {
+  plot(id: "00000000-0000-0000-0000-000000000000") {
+    plotName
+    currentCrop
+  }
+}
+
+query GetTask @auth(level: USER) {
+  task(id: "00000000-0000-0000-0000-000000000000") {
+    taskName
+    status
+  }
+}
+
+query GetHarvest @auth(level: USER) {
+  harvest(id: "00000000-0000-0000-0000-000000000000") {
+    cropName
+    quantity
+  }
+}
+
+query GetInventory @auth(level: USER) {
+  inventory(id: "00000000-0000-0000-0000-000000000000") {
+    itemName
+    quantity
+  }
+}
+
+query ListFarmers @auth(level: PUBLIC, insecureReason: "Listing basic farm info publicly is required for cooperative networking features.") {
+  farmers {
+    name
+    farmName
+  }
+}
+
+query ListPlots @auth(level: USER) {
+  plots(where: { farmerId: { eq_expr: "auth.uid" } }) {
+    plotName
+    sizeInAcres
+  }
+}
+
+query ListTasks @auth(level: USER) {
+  tasks(where: { plot: { farmerId: { eq_expr: "auth.uid" } } }) {
+    taskName
+    dueDate
+  }
+}
+
+query ListHarvests @auth(level: USER) {
+  harvests(where: { plot: { farmerId: { eq_expr: "auth.uid" } } }) {
+    cropName
+    harvestDate
+  }
+}
+
+query ListInventory @auth(level: USER) {
+  inventories(where: { farmerId: { eq_expr: "auth.uid" } }) {
+    itemName
+    quantity
+  }
+}

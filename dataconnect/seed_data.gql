@@ -1,0 +1,96 @@
+mutation SeedDatabase @transaction {
+  farmer_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      name: "Alice Green",
+      email: "alice@example.com",
+      farmName: "Green Valley Farm"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      name: "Bob Field",
+      email: "bob@example.com",
+      farmName: "Sunny Acres"
+    }
+  ])
+  plot_insertMany(data: [
+    {
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01",
+      plotName: "North Field",
+      sizeInAcres: 10.5,
+      farmerId: "550e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02",
+      plotName: "South Field",
+      sizeInAcres: 5.2,
+      farmerId: "550e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a03",
+      plotName: "East Orchard",
+      sizeInAcres: 8.0,
+      farmerId: "550e8400-e29b-41d4-a716-446655440002"
+    }
+  ])
+  task_insertMany(data: [
+    {
+      taskName: "Plant Corn",
+      dueDate: "2024-06-01T08:00:00Z",
+      status: "pending",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01"
+    },
+    {
+      taskName: "Fertilize Soil",
+      dueDate: "2024-06-05T09:00:00Z",
+      status: "in-progress",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02"
+    },
+    {
+      taskName: "Prune Trees",
+      dueDate: "2024-06-10T10:00:00Z",
+      status: "todo",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a03"
+    }
+  ])
+  harvest_insertMany(data: [
+    {
+      cropName: "Wheat",
+      quantity: 500.0,
+      harvestDate: "2024-05-20",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01"
+    },
+    {
+      cropName: "Soybeans",
+      quantity: 300.0,
+      harvestDate: "2024-05-22",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02"
+    },
+    {
+      cropName: "Apples",
+      quantity: 150.0,
+      harvestDate: "2024-05-25",
+      plotId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a03"
+    }
+  ])
+  inventory_insertMany(data: [
+    {
+      itemName: "Corn Seeds",
+      quantity: 50.0,
+      unit: "kg",
+      farmerId: "550e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      itemName: "Nitrogen Fertilizer",
+      quantity: 200.0,
+      unit: "liters",
+      farmerId: "550e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      itemName: "Pruning Shears",
+      quantity: 5.0,
+      unit: "units",
+      farmerId: "550e8400-e29b-41d4-a716-446655440002"
+    }
+  ])
+}

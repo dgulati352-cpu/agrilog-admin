@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import { Sprout, LogOut, Shield, ChevronDown, User, Layers, Menu, X } from 'lucide-react';
+import { Sprout, LogOut, Shield, ChevronDown, User, Menu, X } from 'lucide-react';
 
 export default function Navbar({ 
   user, 
   userRole, 
-  onSimulateRoleChange, 
   onLogout,
   currentView,
   setCurrentView
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleRoleChange = (e) => {
-    onSimulateRoleChange(e.target.value);
-  };
 
   const navigateTo = (view) => {
     setCurrentView(view);
@@ -40,7 +35,20 @@ export default function Navbar({
             {/* Desktop Role-Based Links */}
             {userRole && (
               <div className="hidden md:flex items-center gap-1">
-                {userRole === 'BUYER' ? (
+                {userRole === 'ADMIN' ? (
+                  <>
+                    <button 
+                      onClick={() => navigateTo('admin-dashboard')}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        currentView.startsWith('admin-') 
+                          ? 'bg-slate-100 text-slate-950' 
+                          : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
+                      }`}
+                    >
+                      Admin Dashboard
+                    </button>
+                  </>
+                ) : userRole === 'BUYER' ? (
                   <>
                     <button 
                       onClick={() => navigateTo('buyer-dashboard')}
@@ -124,22 +132,6 @@ export default function Navbar({
           {/* Right Actions (Role Simulator & User Info) */}
           <div className="hidden md:flex items-center gap-4">
             
-            {/* Quick Role Simulator */}
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5 shadow-xs">
-              <div className="flex items-center gap-1.5 text-amber-700 font-semibold text-xs uppercase tracking-wider">
-                <Layers size={14} className="stroke-[2.5] animate-pulse" />
-                <span>Simulate:</span>
-              </div>
-              <select
-                value={userRole || 'GUEST'}
-                onChange={handleRoleChange}
-                className="bg-transparent text-slate-800 text-xs font-semibold focus:outline-hidden cursor-pointer"
-              >
-                <option value="GUEST">Guest / Logged Out</option>
-                <option value="BUYER">Buyer (Punjab Agro)</option>
-                <option value="SELLER">Seller (Harvest Farms)</option>
-              </select>
-            </div>
 
             {/* User Profile Info / Sign In */}
             {userRole ? (
@@ -171,19 +163,6 @@ export default function Navbar({
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-3">
-            {/* Mini Simulator for Mobile */}
-            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
-              <Layers size={12} className="text-amber-700" />
-              <select
-                value={userRole || 'GUEST'}
-                onChange={handleRoleChange}
-                className="bg-transparent text-slate-800 text-[10px] font-semibold focus:outline-hidden cursor-pointer"
-              >
-                <option value="GUEST">Guest</option>
-                <option value="BUYER">Buyer</option>
-                <option value="SELLER">Seller</option>
-              </select>
-            </div>
             
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -202,7 +181,16 @@ export default function Navbar({
           {userRole ? (
             <>
               {/* Role-Specific Links */}
-              {userRole === 'BUYER' ? (
+              {userRole === 'ADMIN' ? (
+                <>
+                  <button 
+                    onClick={() => navigateTo('admin-dashboard')}
+                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Admin Dashboard
+                  </button>
+                </>
+              ) : userRole === 'BUYER' ? (
                 <>
                   <button 
                     onClick={() => navigateTo('buyer-dashboard')}

@@ -1,0 +1,41 @@
+type Farmer @table {
+  name: String!
+  email: String!
+  farmName: String
+  locationCoordinates: String
+}
+
+type Plot @table {
+  plotName: String!
+  sizeInAcres: Float!
+  soilType: String
+  currentCrop: String
+  farmer: Farmer!
+}
+
+type Task @table {
+  taskName: String!
+  dueDate: Timestamp!
+  status: String!
+  assignedWorker: String
+  notes: String
+  plot: Plot!
+}
+
+type Harvest @table {
+  cropName: String!
+  quantity: Float!
+  harvestDate: Date!
+  qualityGrade: String
+  marketPrice: Float
+  plot: Plot!
+}
+
+type Inventory @table {
+  itemName: String!
+  quantity: Float!
+  unit: String!
+  thresholdForAlert: Float
+  category: String
+  farmer: Farmer!
+}

@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import BuyerPanel from './components/BuyerPanel';
 import SellerPanel from './components/SellerPanel';
+import AdminPanel from './components/AdminPanel';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, getDocs } from 'firebase/firestore';
 import AccessDenied from './components/AccessDenied';
 import Footer from './components/Footer';
 
@@ -121,134 +125,302 @@ const INITIAL_ORDERS = [
 
 export default function App() {
   // Authentication & Role State
-  const [userRole, setUserRole] = useState(null); // 'BUYER', 'SELLER', or null
+  const [userRole, setUserRole] = useState(null); // 'BUYER', 'SELLER', 'ADMIN', or null
   const [currentUser, setCurrentUser] = useState(null); // { name, company, phone, location, email }
-  const [currentView, setCurrentView] = useState('landing'); // views: 'landing', 'auth-login', 'auth-signup', 'buyer-*', 'seller-*', 'access-denied'
+  const [currentView, setCurrentView] = useState('landing'); // views: 'landing', 'auth-login', 'auth-signup', 'buyer-*', 'seller-*', 'admin-*', 'access-denied'
   const [attemptedRestrictedView, setAttemptedRestrictedView] = useState(null); // to show which view was denied
+
+  // Admin Impersonation Context
+  const [impersonatedUser, setImpersonatedUser] = useState(null);
 
   // Core Data States
   const [requirements, setRequirements] = useState(INITIAL_REQUIREMENTS);
   const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [bids, setBids] = useState([]);
 
-  // Default Mock Profiles
-  const DEFAULT_BUYER = {
-    name: 'Rajesh Sharma',
-    company: 'Punjab Agro Corp',
-    phone: '+91 98765 43210',
-    location: 'Chandigarh, Punjab',
-    email: 'buyer@agrilog.com'
-  };
+  // Listen to Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const profileData = userDoc.data();
+            setCurrentUser(profileData);
+            setUserRole(profileData.role);
+            
+            // Restore or default view
+            const savedView = localStorage.getItem('agrilog_current_view');
+            if (!savedView || savedView === 'landing' || savedView.startsWith('auth-')) {
+              if (profileData.role === 'ADMIN') {
+                setCurrentView('admin-dashboard');
+              } else {
+                setCurrentView(profileData.role === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard');
+              }
+            } else {
+              setCurrentView(savedView);
+            }
+          } else {
+            // Profile setup pending (e.g. first time Google Sign-In)
+            setCurrentUser({
+              uid: user.uid,
+              email: user.email,
+              name: user.displayName || ''
+            });
+            setUserRole(null);
+            setCurrentView('landing');
+          }
+        } catch (err) {
+          console.error('Error fetching user profile:', err);
+          handleLogout();
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+        setCurrentView('landing');
+      }
+    });
 
-  const DEFAULT_SELLER = {
-    name: 'Sukhwinder Singh',
-    company: 'GreenHarvest Organic Farms',
-    phone: '+91 99887 76655',
-    location: 'Ludhiana, Punjab',
-    email: 'seller@agrilog.com'
-  };
+    return () => unsubscribe();
+  }, []);
+
+  // Sync view updates to localStorage for non-auth views
+  useEffect(() => {
+    if (currentView && currentView !== 'landing' && !currentView.startsWith('auth-')) {
+      localStorage.setItem('agrilog_current_view', currentView);
+    }
+  }, [currentView]);
+
+  // Real-time Firestore synchronization for requirements, orders, and bids
+  useEffect(() => {
+    if (!currentUser?.uid || !userRole) {
+      return;
+    }
+
+    // Set up snapshot listener for Requirements
+    const qReq = collection(db, 'requirements');
+    const unsubscribeReq = onSnapshot(qReq, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      
+      // Sort by createdAt desc
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+      if (userRole === 'BUYER') {
+        // Buyer only sees their own requirements
+        setRequirements(list.filter(r => r.buyerUid === currentUser.uid));
+      } else {
+        // Seller and Admin see all active/quoted requirements
+        setRequirements(list);
+      }
+    });
+
+    // Set up snapshot listener for Orders
+    const qOrd = collection(db, 'orders');
+    const unsubscribeOrd = onSnapshot(qOrd, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort by lastUpdated desc
+      list.sort((a, b) => new Date(b.lastUpdated || 0) - new Date(a.lastUpdated || 0));
+
+      if (userRole === 'BUYER') {
+        // Buyer sees orders they placed
+        setOrders(list.filter(o => o.buyerUid === currentUser.uid));
+      } else if (userRole === 'SELLER') {
+        // Seller sees orders they fulfill
+        setOrders(list.filter(o => o.sellerUid === currentUser.uid));
+      } else if (userRole === 'ADMIN') {
+        // Admin sees all orders
+        setOrders(list);
+      }
+    });
+
+    // Set up snapshot listener for Bids (Quotes)
+    const qBids = collection(db, 'bids');
+    const unsubscribeBids = onSnapshot(qBids, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setBids(list);
+    });
+
+    return () => {
+      unsubscribeReq();
+      unsubscribeOrd();
+      unsubscribeBids();
+    };
+  }, [currentUser, userRole]);
+
+  // Seed initial requirements and orders if database is empty
+  useEffect(() => {
+    const seedDatabase = async () => {
+      const reqSnapshot = await getDocs(collection(db, 'requirements'));
+      if (reqSnapshot.empty) {
+        for (const req of INITIAL_REQUIREMENTS) {
+          const reqId = `REQ-${Math.floor(100 + Math.random() * 900)}`;
+          await setDoc(doc(db, 'requirements', reqId), {
+            ...req,
+            buyerUid: 'seed-buyer-uid',
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+
+      const ordSnapshot = await getDocs(collection(db, 'orders'));
+      if (ordSnapshot.empty) {
+        for (const ord of INITIAL_ORDERS) {
+          const ordId = `ORD-${Math.floor(900 + Math.random() * 100)}`;
+          await setDoc(doc(db, 'orders', ordId), {
+            ...ord,
+            buyerUid: 'seed-buyer-uid',
+            sellerUid: 'seed-seller-uid',
+            lastUpdated: new Date().toISOString()
+          });
+        }
+      }
+    };
+    
+    if (currentUser?.uid) {
+      seedDatabase().catch(console.error);
+    }
+  }, [currentUser]);
 
   // Handle Login / Registration Success
   const handleLoginSuccess = (userData, role) => {
     setCurrentUser(userData);
     setUserRole(role);
+    
+    let nextView = 'landing';
     if (role === 'BUYER') {
-      setCurrentView('buyer-dashboard');
+      nextView = 'buyer-dashboard';
     } else if (role === 'SELLER') {
-      setCurrentView('seller-dashboard');
+      nextView = 'seller-dashboard';
+    } else if (role === 'ADMIN') {
+      nextView = 'admin-dashboard';
     }
+    setCurrentView(nextView);
   };
 
   // Sign out / Logout
-  const handleLogout = () => {
-    setUserRole(null);
-    setCurrentUser(null);
-    setCurrentView('landing');
-  };
-
-  // Quick Role Simulator Switcher
-  const handleSimulateRoleChange = (newRole) => {
-    if (newRole === 'GUEST') {
-      handleLogout();
-    } else if (newRole === 'BUYER') {
-      setCurrentUser(DEFAULT_BUYER);
-      setUserRole('BUYER');
-      setCurrentView('buyer-dashboard');
-    } else if (newRole === 'SELLER') {
-      setCurrentUser(DEFAULT_SELLER);
-      setUserRole('SELLER');
-      setCurrentView('seller-dashboard');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setCurrentUser(null);
+      setUserRole(null);
+      setImpersonatedUser(null);
+      setCurrentView('landing');
+      localStorage.removeItem('agrilog_current_view');
+    } catch (err) {
+      console.error('Logout error:', err);
     }
   };
 
   // Buyer Action: Post a Crop Sourcing Requirement
-  const handlePostRequirement = (reqData) => {
+  const handlePostRequirement = async (reqData) => {
+    const activeUser = impersonatedUser || currentUser;
+    if (!activeUser?.uid) return;
+
+    const reqId = `REQ-${Math.floor(100 + Math.random() * 900)}`;
     const newRequirement = {
-      id: `REQ-${Math.floor(100 + Math.random() * 900)}`,
       articleName: reqData.articleName,
       category: reqData.category,
-      quantity: reqData.quantity,
+      quantity: Number(reqData.quantity),
       unit: reqData.unit,
       deliveryTimeline: reqData.deliveryTimeline,
-      targetPrice: reqData.targetPrice,
+      targetPrice: Number(reqData.targetPrice),
       currency: reqData.currency || 'USD',
-      buyerName: currentUser?.name || 'Demo Buyer',
-      buyerCompany: currentUser?.company || 'Punjab Agro Corp',
-      buyerPhone: currentUser?.phone || '+91 98765 43210',
-      buyerLocation: currentUser?.location || 'Chandigarh, Punjab',
-      status: 'active'
+      buyerUid: activeUser.uid,
+      buyerName: activeUser.name,
+      buyerCompany: activeUser.company,
+      buyerPhone: activeUser.phone,
+      buyerLocation: activeUser.location,
+      status: 'active',
+      createdAt: new Date().toISOString()
     };
 
-    setRequirements([newRequirement, ...requirements]);
+    try {
+      await setDoc(doc(db, 'requirements', reqId), newRequirement);
+    } catch (err) {
+      console.error('Error posting requirement:', err);
+    }
   };
 
   // Seller Action: Submit commercial quote
-  // Generates a mock quote, marks requirement as 'quoted' and generates a new mock Order 
-  // so the buyer can instantly see it in their Order Tracking dashboard!
-  const handleSubmitQuote = (requirementId, quoteData) => {
-    // 1. Update the status of the requirement to 'quoted'
-    setRequirements(requirements.map(req => {
-      if (req.id === requirementId) {
-        return { ...req, status: 'quoted' };
-      }
-      return req;
-    }));
+  const handleSubmitQuote = async (requirementId, quoteData) => {
+    const activeUser = impersonatedUser || currentUser;
+    if (!activeUser?.uid) return;
 
-    // 2. Locate the requirement to fetch Buyer information
+    // 1. Locate the requirement to fetch Buyer information
     const req = requirements.find(r => r.id === requirementId);
     if (!req) return;
 
-    // 3. Auto-generate a pending order so the cycle is fully testable!
-    const newOrder = {
-      id: `ORD-${Math.floor(900 + Math.random() * 100)}`,
-      requirementId: requirementId,
-      articleName: req.articleName,
-      category: req.category,
-      quantity: req.quantity,
-      unit: req.unit,
-      price: quoteData.quotePrice,
-      buyerCompany: req.buyerCompany,
-      buyerName: req.buyerName,
-      buyerLocation: req.buyerLocation,
-      sellerName: quoteData.sellerCompany,
-      status: 'placed',
-      lastUpdated: new Date().toLocaleString()
-    };
+    try {
+      // 2. Update the status of the requirement to 'quoted'
+      await updateDoc(doc(db, 'requirements', requirementId), { status: 'quoted' });
 
-    setOrders([newOrder, ...orders]);
+      // 3. Auto-generate a pending order
+      const orderId = `ORD-${Math.floor(900 + Math.random() * 100)}`;
+      const newOrder = {
+        requirementId: requirementId,
+        articleName: req.articleName,
+        category: req.category,
+        quantity: Number(req.quantity),
+        unit: req.unit,
+        price: Number(quoteData.quotePrice),
+        buyerUid: req.buyerUid || 'seed-buyer-uid',
+        buyerCompany: req.buyerCompany,
+        buyerName: req.buyerName,
+        buyerLocation: req.buyerLocation,
+        sellerUid: activeUser.uid,
+        sellerName: quoteData.sellerCompany,
+        status: 'placed',
+        lastUpdated: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'orders', orderId), newOrder);
+
+      // 4. Record bid details in the 'bids' collection
+      const bidId = `BID-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newBid = {
+        id: bidId,
+        requirementId: requirementId,
+        articleName: req.articleName,
+        category: req.category,
+        quantity: Number(req.quantity),
+        unit: req.unit,
+        targetPrice: Number(req.targetPrice),
+        bidPrice: Number(quoteData.quotePrice),
+        deliveryDays: Number(quoteData.deliveryDays),
+        sellerUid: activeUser.uid,
+        sellerName: quoteData.sellerName,
+        sellerCompany: quoteData.sellerCompany,
+        sellerMessage: quoteData.sellerMessage,
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'bids', bidId), newBid);
+
+    } catch (err) {
+      console.error('Error submitting quote:', err);
+    }
   };
 
   // Seller Action: Update shipment tracking stage (placed -> dispatched -> transit -> delivered)
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrders(orders.map(ord => {
-      if (ord.id === orderId) {
-        return {
-          ...ord,
-          status: newStatus,
-          lastUpdated: new Date().toLocaleString()
-        };
-      }
-      return ord;
-    }));
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: newStatus,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Error updating order status:', err);
+    }
   };
 
   // STAGE ROUTE GUARDING & RENDERING ENGINE
@@ -256,9 +428,10 @@ export default function App() {
   const renderMainContent = () => {
     const isBuyerPage = currentView.startsWith('buyer-');
     const isSellerPage = currentView.startsWith('seller-');
+    const isAdminPage = currentView.startsWith('admin-');
 
     // Route Guarding: Guest trying to visit panels
-    if ((isBuyerPage || isSellerPage) && !userRole) {
+    if ((isBuyerPage || isSellerPage || isAdminPage) && !userRole) {
       return (
         <LandingPage 
           onLoginSuccess={handleLoginSuccess} 
@@ -267,8 +440,18 @@ export default function App() {
       );
     }
 
-    // Route Guarding: Buyer trying to visit Seller pages
-    if (isSellerPage && userRole !== 'SELLER') {
+    // Route Guarding: Non-Admin trying to visit Admin pages
+    if (isAdminPage && userRole !== 'ADMIN') {
+      return (
+        <AccessDenied 
+          userRole={userRole} 
+          onRedirect={() => setCurrentView(userRole === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard')} 
+        />
+      );
+    }
+
+    // Route Guarding: Buyer trying to visit Seller pages (Admin bypass allowed)
+    if (isSellerPage && userRole !== 'SELLER' && userRole !== 'ADMIN') {
       return (
         <AccessDenied 
           userRole={userRole} 
@@ -277,8 +460,8 @@ export default function App() {
       );
     }
 
-    // Route Guarding: Seller trying to visit Buyer pages
-    if (isBuyerPage && userRole !== 'BUYER') {
+    // Route Guarding: Seller trying to visit Buyer pages (Admin bypass allowed)
+    if (isBuyerPage && userRole !== 'BUYER' && userRole !== 'ADMIN') {
       return (
         <AccessDenied 
           userRole={userRole} 
@@ -318,7 +501,7 @@ export default function App() {
       case 'buyer-order-tracking':
         return (
           <BuyerPanel
-            user={currentUser}
+            user={impersonatedUser || currentUser}
             requirements={requirements}
             orders={orders}
             onPostRequirement={handlePostRequirement}
@@ -333,11 +516,31 @@ export default function App() {
       case 'seller-fulfillment':
         return (
           <SellerPanel
-            user={currentUser}
+            user={impersonatedUser || currentUser}
             requirements={requirements}
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onSubmitQuote={handleSubmitQuote}
+            currentSubView={currentView}
+            setCurrentSubView={setCurrentView}
+          />
+        );
+
+      // ADMIN VIEWS
+      case 'admin-dashboard':
+      case 'admin-sellers':
+      case 'admin-buyers':
+      case 'admin-bids':
+        return (
+          <AdminPanel
+            user={currentUser}
+            requirements={requirements}
+            orders={orders}
+            bids={bids}
+            onImpersonate={(impersonatedProfile) => {
+              setImpersonatedUser(impersonatedProfile);
+              setCurrentView(impersonatedProfile.role === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard');
+            }}
             currentSubView={currentView}
             setCurrentSubView={setCurrentView}
           />
@@ -358,11 +561,25 @@ export default function App() {
       <Navbar 
         user={currentUser} 
         userRole={userRole} 
-        onSimulateRoleChange={handleSimulateRoleChange} 
         onLogout={handleLogout}
         currentView={currentView}
         setCurrentView={setCurrentView}
       />
+      
+      {impersonatedUser && (
+        <div className="bg-amber-500 text-white font-semibold py-2.5 px-4 text-center text-xs sm:text-sm flex justify-center items-center gap-2 shadow-inner z-50">
+          <span>⚠️ Impersonation Mode: Acting as {impersonatedUser.role.toLowerCase()} - <strong>{impersonatedUser.company}</strong> ({impersonatedUser.name})</span>
+          <button 
+            onClick={() => {
+              setImpersonatedUser(null);
+              setCurrentView('admin-dashboard');
+            }}
+            className="ml-3 bg-white text-amber-700 hover:bg-slate-100 font-bold px-2 py-0.5 rounded text-xs transition-all cursor-pointer"
+          >
+            Return to Admin Panel
+          </button>
+        </div>
+      )}
       
       <main className="flex-grow">
         {renderMainContent()}
