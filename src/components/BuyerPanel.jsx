@@ -1,713 +1,495 @@
 import React, { useState } from 'react';
 import { 
-  PlusCircle, 
+  LayoutDashboard, 
+  ShoppingBag, 
   FileText, 
   Truck, 
+  Heart, 
+  Wallet, 
+  MessageSquare, 
   TrendingUp, 
-  CheckCircle, 
+  User, 
+  Settings, 
+  Search, 
+  Bell, 
+  ChevronDown, 
+  Plus, 
+  ArrowUpRight, 
+  CheckCircle2, 
   Clock, 
-  AlertCircle,
-  Package,
-  Calendar,
-  DollarSign,
-  Tag,
-  ChevronRight,
-  Phone,
-  Building,
-  MapPin
+  Star, 
+  Building, 
+  MapPin, 
+  X,
+  Filter
 } from 'lucide-react';
 
 export default function BuyerPanel({ 
   user, 
-  requirements, 
-  orders, 
+  requirements = [], 
+  orders = [], 
   onPostRequirement, 
+  onUpdateOrderStatus, 
   currentSubView, 
   setCurrentSubView 
 }) {
-  // Filter data for this logged-in buyer
-  const buyerRequirements = requirements.filter(req => req.buyerCompany === user.company);
-  const buyerOrders = orders.filter(ord => ord.buyerCompany === user.company);
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isPostReqModalOpen, setIsPostReqModalOpen] = useState(false);
 
-  // Form states
+  // Form states for posting new requirement
   const [articleName, setArticleName] = useState('');
   const [category, setCategory] = useState('Grains');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('Tons');
-  const [deliveryTimeline, setDeliveryTimeline] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [deliveryTimeline, setDeliveryTimeline] = useState('');
+  const [specifications, setSpecifications] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Local state for selecting order detail in tracking
-  const [selectedOrderId, setSelectedOrderId] = useState(buyerOrders[0]?.id || null);
-  const activeTrackingOrder = buyerOrders.find(ord => ord.id === selectedOrderId) || buyerOrders[0];
-
-  const handleSubmit = (e) => {
+  const handlePostReqSubmit = (e) => {
     e.preventDefault();
-    if (!articleName || !quantity || !deliveryTimeline || !targetPrice) return;
+    if (!articleName || !quantity || !targetPrice) return;
 
     onPostRequirement({
       articleName,
       category,
       quantity: parseFloat(quantity),
       unit,
-      deliveryTimeline,
       targetPrice: parseFloat(targetPrice),
-      currency
+      deliveryTimeline: deliveryTimeline || '15 Days',
+      specifications
     });
 
-    // Reset form
-    setArticleName('');
-    setQuantity('');
-    setDeliveryTimeline('');
-    setTargetPrice('');
-    setSuccessMsg('Requirement posted successfully to the Seller Marketplace Leads feed!');
-    
+    setSuccessMsg('Requirement posted to marketplace feed successfully!');
+
     setTimeout(() => {
+      setIsPostReqModalOpen(false);
       setSuccessMsg('');
-      setCurrentSubView('buyer-my-requirements');
+      setArticleName('');
+      setQuantity('');
+      setTargetPrice('');
+      setSpecifications('');
     }, 2000);
   };
 
-  // Stepper helper
-  const renderStepper = (status) => {
-    const steps = [
-      { id: 'placed', label: 'Order Placed', desc: 'Awaiting dispatch' },
-      { id: 'dispatched', label: 'Dispatched', desc: 'Left warehouse' },
-      { id: 'transit', label: 'In Transit', desc: 'On its way' },
-      { id: 'delivered', label: 'Delivered', desc: 'Received & verified' }
-    ];
+  const buyerOrders = orders.filter(ord => ord.buyerCompany === user?.company || true);
 
-    const getStatusIndex = (currentStatus) => {
-      switch(currentStatus) {
-        case 'placed': return 0;
-        case 'dispatched': return 1;
-        case 'transit': return 2;
-        case 'delivered': return 3;
-        default: return 0;
-      }
-    };
-
-    const activeIndex = getStatusIndex(status);
-
-    return (
-      <div className="py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 md:gap-4 relative">
-          
-          {/* Connector Line (Desktop) */}
-          <div className="absolute top-1/2 left-[10%] right-[10%] h-1 bg-slate-200 -translate-y-1/2 hidden md:block z-0">
-            <div 
-              className="h-full bg-forest-500 transition-all duration-500" 
-              style={{ width: `${(activeIndex / 3) * 100}%` }}
-            />
-          </div>
-
-          {steps.map((step, idx) => {
-            const isCompleted = idx < activeIndex;
-            const isCurrent = idx === activeIndex;
-            const isPending = idx > activeIndex;
-
-            let stepColor = "bg-slate-100 border-slate-200 text-slate-400";
-            if (isCompleted) stepColor = "bg-forest-600 border-forest-600 text-white shadow-md shadow-forest-100";
-            if (isCurrent) stepColor = "bg-white border-forest-600 text-forest-700 ring-4 ring-forest-50 font-bold";
-
-            return (
-              <div key={step.id} className="flex md:flex-col items-center gap-4 md:gap-2 flex-1 w-full md:w-auto relative z-10">
-                {/* Circle Icon */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-sm transition-all duration-300 ${stepColor}`}>
-                  {isCompleted ? <CheckCircle size={18} /> : <span>0{idx+1}</span>}
-                </div>
-
-                {/* Text */}
-                <div className="text-left md:text-center">
-                  <h4 className={`text-sm font-semibold ${isCurrent ? 'text-forest-700' : isCompleted ? 'text-slate-800' : 'text-slate-400'}`}>
-                    {step.label}
-                  </h4>
-                  <p className="text-xs text-slate-500">{step.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  const sidebarItems = [
+    { label: 'Dashboard', icon: <LayoutDashboard size={18} />, view: 'buyer-dashboard' },
+    { label: 'Marketplace', icon: <ShoppingBag size={18} />, view: 'buyer-post-requirement' },
+    { label: 'My Orders', icon: <FileText size={18} />, view: 'buyer-my-requirements' },
+    { label: 'Shipments', icon: <Truck size={18} />, view: 'buyer-order-tracking' },
+    { label: 'Favorites', icon: <Heart size={18} />, view: 'buyer-dashboard' },
+    { label: 'Finance', icon: <Wallet size={18} />, view: 'buyer-dashboard' },
+    { label: 'Messages', icon: <MessageSquare size={18} />, view: 'buyer-dashboard' },
+    { label: 'Analytics', icon: <TrendingUp size={18} />, view: 'buyer-dashboard' },
+    { label: 'Profile', icon: <User size={18} />, view: 'buyer-dashboard' },
+    { label: 'Settings', icon: <Settings size={18} />, view: 'buyer-dashboard' }
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Buyer Header Banner */}
-      <div className="bg-gradient-to-r from-forest-700 to-forest-800 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-forest-900/10 mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <span className="text-xs font-bold text-forest-200 uppercase tracking-widest bg-forest-800/60 px-3 py-1 rounded-full">
-              Buyer Panel
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display mt-2">
-              Procurement Hub
-            </h1>
-            <p className="text-xs sm:text-sm text-forest-100 mt-1 max-w-xl">
-              Logistics, requirements, and orders managed for <span className="font-semibold">{user.company}</span>.
-            </p>
-          </div>
-          <button
-            onClick={() => setCurrentSubView('buyer-post-requirement')}
-            className="flex items-center gap-2 px-5 py-3 bg-white text-forest-700 hover:bg-forest-50 font-bold rounded-xl shadow-md transition-all hover:-translate-y-0.5 text-sm"
-          >
-            <PlusCircle size={18} />
-            Post New Requirement
-          </button>
-        </div>
-      </div>
-
-      {/* SUBVIEW ROUTER */}
-      {currentSubView === 'buyer-dashboard' && (
-        <div className="space-y-8 animate-fadeIn">
-          {/* Summary metrics widgets */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-center justify-between">
+    <div className="flex min-h-screen bg-[#FAF9F6]">
+      
+      {/* LEFT SIDEBAR (Dark Deep Green) */}
+      <aside className="w-64 bg-forest-950 text-slate-300 flex flex-col justify-between p-4 border-r border-forest-900 shrink-0 hidden md:flex select-none">
+        <div>
+          {/* Brand Header */}
+          <div className="p-2 mb-6">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 bg-forest-600 rounded-xl text-white shadow-xs">
+                <ShoppingBag size={20} className="stroke-[2.5]" />
+              </span>
               <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Requirements</span>
-                <h3 className="text-3xl font-extrabold font-display text-slate-900 mt-1">{buyerRequirements.length}</h3>
-                <span className="text-xs text-forest-600 font-medium flex items-center gap-1 mt-1">
-                  Active in Marketplace
-                </span>
-              </div>
-              <div className="p-3 bg-forest-50 text-forest-600 rounded-xl">
-                <FileText size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Shipments</span>
-                <h3 className="text-3xl font-extrabold font-display text-slate-900 mt-1">
-                  {buyerOrders.filter(o => o.status !== 'delivered').length}
-                </h3>
-                <span className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
-                  In Transit / Dispatched
-                </span>
-              </div>
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                <Truck size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fulfillment Rate</span>
-                <h3 className="text-3xl font-extrabold font-display text-slate-900 mt-1">
-                  {buyerRequirements.length > 0 
-                    ? `${Math.round((buyerRequirements.filter(r => r.status === 'fulfilled').length / buyerRequirements.length) * 100)}%` 
-                    : '100%'}
-                </h3>
-                <span className="text-xs text-slate-500 font-medium mt-1 block">
-                  Procured vs requested
-                </span>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                <CheckCircle size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Est. Budget Managed</span>
-                <h3 className="text-3xl font-extrabold font-display text-slate-900 mt-1">
-                  ${buyerRequirements.reduce((sum, r) => sum + (r.targetPrice * r.quantity), 0).toLocaleString()}
-                </h3>
-                <span className="text-xs text-slate-500 font-medium mt-1 block">
-                  Based on target prices
-                </span>
-              </div>
-              <div className="p-3 bg-earth-50 text-earth-600 rounded-xl">
-                <TrendingUp size={24} />
+                <h1 className="font-serif-title font-bold text-lg text-white leading-none">AGRILOG</h1>
+                <p className="text-[9px] text-gold-300/80 font-serif-title italic mt-0.5">Connecting Agriculture Beyond Borders</p>
               </div>
             </div>
           </div>
 
-          {/* Grid Layout: Active Requirements + Active Deliveries */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Active requirements short list */}
-            <div className="lg:col-span-6 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-bold font-display text-slate-900">Recent Requirements</h3>
-                  <p className="text-xs text-slate-500">Commodity sourcing listings posted by you</p>
-                </div>
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            {sidebarItems.map((item) => {
+              const isActive = activeTab === item.label;
+              return (
                 <button
-                  onClick={() => setCurrentSubView('buyer-my-requirements')}
-                  className="text-xs font-semibold text-forest-600 hover:text-forest-700 flex items-center gap-0.5"
+                  key={item.label}
+                  onClick={() => {
+                    setActiveTab(item.label);
+                    if (item.view) setCurrentSubView(item.view);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    isActive 
+                      ? 'bg-forest-800/90 text-white font-bold shadow-xs border border-forest-600/40' 
+                      : 'text-slate-400 hover:text-white hover:bg-forest-900/60'
+                  }`}
                 >
-                  View All <ChevronRight size={14} />
+                  <span className={isActive ? 'text-gold-400' : 'text-slate-400'}>{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
-              </div>
+              );
+            })}
+          </nav>
+        </div>
 
-              {buyerRequirements.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-center flex-1 border-2 border-dashed border-slate-100 rounded-xl">
-                  <FileText size={36} className="mb-2 text-slate-300" />
-                  <p className="text-sm font-semibold">No requirements posted yet</p>
-                  <button
-                    onClick={() => setCurrentSubView('buyer-post-requirement')}
-                    className="text-xs text-forest-600 hover:underline font-semibold mt-1"
-                  >
-                    Post your first requirement
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4 divide-y divide-slate-100 flex-1">
-                  {buyerRequirements.slice(0, 3).map((req) => (
-                    <div key={req.id} className="pt-4 first:pt-0 flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-sm text-slate-900">{req.articleName}</h4>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold uppercase">
-                            {req.category}
-                          </span>
-                          <span className="text-slate-500 text-xs font-medium">
-                            {req.quantity} {req.unit}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                          req.status === 'active' 
-                            ? 'bg-green-50 text-green-700 border border-green-150' 
-                            : req.status === 'quoted' 
-                              ? 'bg-amber-50 text-amber-700 border border-amber-150' 
-                              : 'bg-slate-150 text-slate-600'
-                        }`}>
-                          {req.status === 'active' ? 'Active' : req.status === 'quoted' ? 'Quotes Rec' : 'Fulfilled'}
-                        </span>
-                        <div className="text-xs text-slate-400 mt-1 font-semibold">
-                          Target: ${req.targetPrice}/{req.unit === 'Tons' ? 'Ton' : 'Kg'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Bottom Profile Box */}
+        <div className="pt-4 border-t border-forest-900/80">
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-forest-900/40 border border-forest-800/60">
+            <div className="w-8 h-8 bg-forest-700 rounded-full flex items-center justify-center text-white font-bold text-xs border border-gold-400/30">
+              {user?.name ? user.name.charAt(0) : 'B'}
             </div>
-
-            {/* Quick Track Status Card */}
-            <div className="lg:col-span-6 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-bold font-display text-slate-900">Active Shipments</h3>
-                  <p className="text-xs text-slate-500">Live order delivery status tracking</p>
-                </div>
-                <button
-                  onClick={() => setCurrentSubView('buyer-order-tracking')}
-                  className="text-xs font-semibold text-forest-600 hover:text-forest-700 flex items-center gap-0.5"
-                >
-                  Full Tracking Details <ChevronRight size={14} />
-                </button>
-              </div>
-
-              {buyerOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-center flex-1 border-2 border-dashed border-slate-100 rounded-xl">
-                  <Truck size={36} className="mb-2 text-slate-300" />
-                  <p className="text-sm font-semibold">No active shipments</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-                    Once a seller accepts a quote and fulfilling begins, orders will show up here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4 flex-1">
-                  {/* Current Active Tracking Mini-Card */}
-                  <div className="p-4 bg-slate-50 border border-slate-200/50 rounded-xl">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          ORDER ID: {buyerOrders[0].id}
-                        </span>
-                        <h4 className="font-bold text-slate-800 text-sm mt-1">
-                          {buyerOrders[0].articleName} ({buyerOrders[0].quantity} {buyerOrders[0].unit})
-                        </h4>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          Supplier: <span className="font-semibold text-slate-700">{buyerOrders[0].sellerName}</span>
-                        </div>
-                      </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        buyerOrders[0].status === 'delivered' 
-                          ? 'bg-green-100 text-green-800' 
-                          : buyerOrders[0].status === 'transit' 
-                            ? 'bg-blue-100 text-blue-800 animate-pulse' 
-                            : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {buyerOrders[0].status.toUpperCase()}
-                      </span>
-                    </div>
-
-                    {/* Progress Bar (simple) */}
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Fulfillment Stage:</span>
-                        <span className="font-bold text-forest-700">
-                          {buyerOrders[0].status === 'placed' && 'Placed'}
-                          {buyerOrders[0].status === 'dispatched' && 'Dispatched'}
-                          {buyerOrders[0].status === 'transit' && 'In Transit'}
-                          {buyerOrders[0].status === 'delivered' && 'Delivered'}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-forest-600" 
-                          style={{
-                            width: 
-                              buyerOrders[0].status === 'placed' ? '25%' :
-                              buyerOrders[0].status === 'dispatched' ? '50%' :
-                              buyerOrders[0].status === 'transit' ? '75%' : '100%'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className="flex-1 truncate">
+              <h4 className="text-xs font-bold text-white truncate">{user?.company || 'Global Farms Ltd.'}</h4>
+              <p className="text-[9px] text-gold-300 font-medium">Buyer • Verified</p>
             </div>
           </div>
         </div>
-      )}
+      </aside>
 
-      {currentSubView === 'buyer-post-requirement' && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden max-w-2xl mx-auto animate-fadeIn">
-          <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-            <div className="p-2.5 bg-forest-100 text-forest-700 rounded-xl">
-              <PlusCircle size={20} />
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        {/* TOP NAVBAR */}
+        <header className="bg-white border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between gap-4 sticky top-0 z-20 shadow-xs">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold font-display text-slate-900">Buyer Dashboard</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Search Bar */}
+            <div className="relative hidden sm:block">
+              <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search products, suppliers..." 
+                className="pl-9 pr-4 py-1.5 text-xs bg-slate-100/80 border border-slate-200 rounded-full w-60 focus:outline-hidden focus:bg-white focus:border-forest-600 transition-all"
+              />
             </div>
-            <div>
-              <h2 className="text-lg font-bold font-display text-slate-900">Post a Crop / Crop Commodity Requirement</h2>
-              <p className="text-xs text-slate-500">Listed instantly onto the Seller Marketplace Leads feed</p>
+
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              <button className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full relative cursor-pointer">
+                <Bell size={18} />
+                <span className="w-2 h-2 bg-emerald-500 rounded-full absolute top-1.5 right-1.5 ring-2 ring-white" />
+              </button>
+
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 cursor-pointer">
+                <span>🌐 English</span>
+                <ChevronDown size={12} />
+              </div>
+
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                <div className="w-7 h-7 bg-forest-800 text-gold-300 rounded-full flex items-center justify-center font-bold text-xs">
+                  {user?.name ? user.name.charAt(0) : 'G'}
+                </div>
+                <span className="text-xs font-bold text-slate-800 hidden lg:inline">{user?.company || 'Global Farms Ltd.'}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* DASHBOARD BODY CANVASES */}
+        <main className="p-6 space-y-6 max-w-7xl mx-auto w-full">
+          
+          {/* METRICS ROW (4 Cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+              <span className="text-xs text-slate-500 font-semibold uppercase">Total Spent</span>
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-2xl font-extrabold font-display text-slate-900">$128,750</h3>
+                <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">+15.8%</span>
+              </div>
+              <span className="text-[10px] text-slate-400 block">from last month</span>
+            </div>
+
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+              <span className="text-xs text-slate-500 font-semibold uppercase">Active Orders</span>
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-2xl font-extrabold font-display text-slate-900">18</h3>
+                <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">+5</span>
+              </div>
+              <span className="text-[10px] text-slate-400 block">from last month</span>
+            </div>
+
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+              <span className="text-xs text-slate-500 font-semibold uppercase">Delivered Orders</span>
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-2xl font-extrabold font-display text-slate-900">32</h3>
+                <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">+7</span>
+              </div>
+              <span className="text-[10px] text-slate-400 block">from last month</span>
+            </div>
+
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+              <span className="text-xs text-slate-500 font-semibold uppercase">Saved Suppliers</span>
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-2xl font-extrabold font-display text-slate-900">24</h3>
+                <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">+3 new</span>
+              </div>
+              <span className="text-[10px] text-slate-400 block">this month</span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            {successMsg && (
-              <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-xs font-semibold flex items-center gap-2">
-                <CheckCircle size={16} />
-                {successMsg}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Article / Crop Name
-                </label>
-                <div className="relative">
-                  <Tag size={16} className="absolute left-3 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    value={articleName}
-                    onChange={(e) => setArticleName(e.target.value)}
-                    placeholder="e.g. Premium Basmati Rice"
-                    className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Category
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                >
-                  <option value="Grains">Grains (Rice, Wheat, Corn)</option>
-                  <option value="Vegetables">Vegetables (Potatoes, Onions, Tomatoes)</option>
-                  <option value="Fruits">Fruits (Mangoes, Apples, Bananas)</option>
-                  <option value="Equipment">Farming Equipment / Tools</option>
-                  <option value="Fertilizers">Fertilizers & Seed Packs</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Quantity Needed
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    step="any"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="e.g. 50"
-                    className="flex-1 px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                  />
-                  <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-28 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                  >
-                    <option value="Tons">Tons</option>
-                    <option value="Kgs">Kgs</option>
-                    <option value="Quintals">Quintals</option>
-                    <option value="Crates">Crates</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Target Price
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-2.5 text-slate-400 text-sm font-semibold">
-                    $
-                  </div>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={targetPrice}
-                    onChange={(e) => setTargetPrice(e.target.value)}
-                    placeholder="Per unit price"
-                    className="w-full pl-7 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Delivery Timeline
-              </label>
-              <div className="relative">
-                <Calendar size={16} className="absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  value={deliveryTimeline}
-                  onChange={(e) => setDeliveryTimeline(e.target.value)}
-                  placeholder="e.g. Within 15 Days (by August 30)"
-                  className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Quick Procuring Details Preview */}
-            <div className="p-4 bg-forest-50 border border-forest-150 rounded-xl text-forest-800 text-xs">
-              <span className="font-bold">Posting Preview:</span> Listing will include crop details, metric unit, and buyer company info (<span className="font-semibold">{user.company}</span>, Located in: <span className="font-semibold">{user.location}</span>). It will show up live for sellers to send quick price quotes.
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl shadow-md shadow-forest-100 transition-all hover:-translate-y-0.5 cursor-pointer"
-            >
-              Broadcast Requirement
-            </button>
-          </form>
-        </div>
-      )}
-
-      {currentSubView === 'buyer-my-requirements' && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden animate-fadeIn">
-          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-            <div>
-              <h2 className="text-lg font-bold font-display text-slate-900">My Sourcing History</h2>
-              <p className="text-xs text-slate-500">List of all active and completed crop purchase requirements</p>
-            </div>
-            <button
-              onClick={() => setCurrentSubView('buyer-post-requirement')}
-              className="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5"
-            >
-              <PlusCircle size={14} />
-              Post New
-            </button>
-          </div>
-
-          {buyerRequirements.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-center">
-              <FileText size={48} className="mb-3 text-slate-300" />
-              <p className="text-sm font-semibold">You have not posted any crop requirements yet</p>
-              <p className="text-xs text-slate-400 mt-1 max-w-[280px]">
-                Create a posting to receive live pricing quotes from certified farmers and suppliers.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="px-6 py-4">Article / Crop</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Quantity</th>
-                    <th className="px-6 py-4">Target Price</th>
-                    <th className="px-6 py-4">Timeline</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {buyerRequirements.map((req) => (
-                    <tr key={req.id} className="hover:bg-slate-50/40 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-slate-950">{req.articleName}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold uppercase">
-                          {req.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-700">
-                        {req.quantity} {req.unit}
-                      </td>
-                      <td className="px-6 py-4 font-semibold text-slate-900">
-                        ${req.targetPrice}/{req.unit === 'Tons' ? 'Ton' : 'Kg'}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
-                        {req.deliveryTimeline}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          req.status === 'active'
-                            ? 'bg-green-50 text-green-700 border border-green-100'
-                            : req.status === 'quoted'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                              : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            req.status === 'active' ? 'bg-green-600' : req.status === 'quoted' ? 'bg-amber-500' : 'bg-slate-400'
-                          }`} />
-                          {req.status === 'active' ? 'Active' : req.status === 'quoted' ? 'Offers Rec.' : 'Fulfilled'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {currentSubView === 'buyer-order-tracking' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fadeIn">
-          {/* Order Side List */}
-          <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col max-h-[600px] overflow-y-auto">
-            <h3 className="text-lg font-bold font-display text-slate-900 mb-4">Active Orders</h3>
+          {/* MIDDLE SECTION: Recommended For You + Market Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {buyerOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-center border-2 border-dashed border-slate-100 rounded-xl flex-1">
-                <Package size={36} className="mb-2 text-slate-300" />
-                <p className="text-xs font-semibold">No orders currently active</p>
+            {/* Recommended For You Carousel */}
+            <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-slate-900 text-base font-display">Recommended For You</h3>
+                <button 
+                  onClick={() => setIsPostReqModalOpen(true)}
+                  className="text-xs text-forest-700 hover:underline font-semibold cursor-pointer"
+                >
+                  View All
+                </button>
               </div>
-            ) : (
-              <div className="space-y-3 flex-1">
-                {buyerOrders.map((ord) => (
-                  <div
-                    key={ord.id}
-                    onClick={() => setSelectedOrderId(ord.id)}
-                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
-                      (activeTrackingOrder && activeTrackingOrder.id === ord.id)
-                        ? 'border-forest-600 bg-forest-50/20 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">
-                        ID: {ord.id}
-                      </span>
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${
-                        ord.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {ord.status}
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-slate-800 text-sm mt-1">{ord.articleName}</h4>
-                    <div className="flex justify-between items-center text-xs text-slate-500 mt-2 font-medium">
-                      <span>{ord.quantity} {ord.unit}</span>
-                      <span className="text-slate-900 font-semibold">${(ord.price * ord.quantity).toLocaleString()}</span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                {[
+                  { title: 'Organic Basmati Rice', country: 'India', price: '$1,250 / MT', moq: 'MOQ 500 MT', img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&q=80' },
+                  { title: 'Arabica Coffee Beans', country: 'Ethiopia', price: '$4,250 / MT', moq: 'MOQ 200 MT', img: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&q=80' },
+                  { title: 'Premium Spices', country: 'Sri Lanka', price: '$2,350 / MT', moq: 'MOQ 100 MT', img: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80' },
+                  { title: 'Ceylon Tea', country: 'Sri Lanka', price: '$2,150 / MT', moq: 'MOQ 500 MT', img: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&q=80' }
+                ].map((rec, idx) => (
+                  <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 relative flex flex-col justify-between hover:shadow-xs transition-all group">
+                    <button className="absolute top-4 right-4 p-1.5 bg-white/80 backdrop-blur-xs rounded-full text-slate-400 hover:text-red-500 transition-colors z-10">
+                      <Heart size={14} />
+                    </button>
+
+                    <img src={rec.img} alt={rec.title} className="w-full h-24 object-cover rounded-lg mb-2 group-hover:scale-105 transition-transform" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 truncate" title={rec.title}>{rec.title}</h4>
+                      <span className="text-[10px] text-slate-400 block mb-1">{rec.country}</span>
+                      <div className="flex justify-between items-center border-t border-slate-200/60 pt-1.5">
+                        <span className="text-[11px] font-bold text-forest-700">{rec.price}</span>
+                        <span className="text-[9px] text-slate-500 font-semibold">{rec.moq}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* Market Insights Chart */}
+            <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-slate-900 text-base font-display">Market Insights</h3>
+                <button className="text-xs text-forest-700 hover:underline font-semibold cursor-pointer">
+                  View Report
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">Basmati Rice Price Trend (USD / MT)</p>
+
+              {/* Price Trend Chart SVG */}
+              <div className="h-36 w-full relative">
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 200 80" preserveAspectRatio="none">
+                  <path d="M 0,60 Q 40,30 80,50 T 160,20 T 200,35" fill="none" stroke="#32561c" strokeWidth="2.5" />
+                  <path d="M 0,60 Q 40,30 80,50 T 160,20 T 200,35 L 200,80 L 0,80 Z" fill="url(#buyer-grad)" opacity="0.15" />
+                  <defs>
+                    <linearGradient id="buyer-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#32561c" />
+                      <stop offset="100%" stopColor="#32561c" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="flex justify-between text-[9px] text-slate-400 mt-1 font-semibold">
+                  <span>Jan</span>
+                  <span>Feb</span>
+                  <span>Mar</span>
+                  <span>Apr</span>
+                  <span>May</span>
+                  <span>Jun</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          {/* Stepper details */}
-          <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col">
-            {activeTrackingOrder ? (
-              <div className="flex-1 space-y-6">
-                <div className="border-b border-slate-100 pb-4">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+          {/* BOTTOM SECTION: Recent Orders + Top Suppliers */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Recent Orders Table */}
+            <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-slate-900 text-base font-display">Recent Orders</h3>
+                <button 
+                  onClick={() => setCurrentSubView('buyer-order-tracking')}
+                  className="text-xs text-forest-700 hover:underline font-semibold cursor-pointer"
+                >
+                  View All Orders
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { id: 'ORD-2024-00128', name: 'Organic Basmati Rice', supplier: 'Green Fields Exports', price: '$5,620', status: 'Confirmed', date: 'May 20, 2024' },
+                  { id: 'ORD-2024-00127', name: 'Arabica Coffee Beans', supplier: 'Highland Coffee Co.', price: '$8,450', status: 'Shipped', date: 'May 18, 2024' },
+                  { id: 'ORD-2024-00126', name: 'Premium Spices', supplier: 'Spice World', price: '$2,350', status: 'Processing', date: 'May 15, 2024' },
+                  { id: 'ORD-2024-00125', name: 'Ceylon Tea', supplier: 'Ceylon Fresh Tea', price: '$2,150', status: 'Delivered', date: 'May 10, 2024' }
+                ].map((ord) => (
+                  <div key={ord.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 border border-slate-200/60 rounded-xl gap-2 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-forest-600 bg-forest-50 border border-forest-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        Active Order Tracking
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">{ord.id}</span>
+                      <h4 className="font-bold text-slate-900">{ord.name}</h4>
+                      <p className="text-[10px] text-slate-500">{ord.supplier}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <span className="font-bold text-slate-900">{ord.price}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        ord.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-800' :
+                        ord.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                        ord.status === 'Processing' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
+                      }`}>
+                        {ord.status}
                       </span>
-                      <h2 className="text-xl font-extrabold font-display text-slate-900 mt-1">
-                        {activeTrackingOrder.articleName}
-                      </h2>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <div className="text-xs text-slate-500">Order ID: <span className="font-semibold text-slate-800">{activeTrackingOrder.id}</span></div>
-                      <div className="text-xs text-slate-500">Last update: <span className="font-semibold text-slate-800">{activeTrackingOrder.lastUpdated || 'Today'}</span></div>
+                      <span className="text-[10px] text-slate-400 hidden sm:inline">{ord.date}</span>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Suppliers List */}
+            <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-900 text-base font-display">Top Suppliers</h3>
+                  <button className="text-xs text-forest-700 hover:underline font-semibold cursor-pointer">
+                    View All
+                  </button>
                 </div>
 
-                {/* Core Stepper Component */}
-                {renderStepper(activeTrackingOrder.status)}
-
-                {/* Logistics details list */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Supplier Information</h4>
-                    <div className="space-y-2.5 text-xs text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Building size={14} className="text-slate-400" />
-                        <span className="font-semibold text-slate-800">{activeTrackingOrder.sellerName}</span>
+                <div className="space-y-3.5">
+                  {[
+                    { name: 'Green Fields Exports', country: 'India', rating: '4.9', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' },
+                    { name: 'Highland Coffee Co.', country: 'Ethiopia', rating: '4.8', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80' },
+                    { name: 'Spice World', country: 'Sri Lanka', rating: '4.7', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80' }
+                  ].map((sup, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-2 rounded-xl hover:bg-slate-50">
+                      <div className="flex items-center gap-2.5">
+                        <img src={sup.avatar} alt={sup.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900">{sup.name}</h4>
+                          <span className="text-[10px] text-slate-400 font-medium">{sup.country}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Phone size={14} className="text-slate-400" />
-                        <span>+91 94432 09876</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-slate-400" />
-                        <span>Grain Silo #4, Ludhiana Industrial Zone, Punjab</span>
+                      <div className="flex items-center gap-1 text-xs font-bold text-amber-600">
+                        <span>⭐</span>
+                        <span>{sup.rating}</span>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Consignment Details</h4>
-                    <div className="space-y-2 text-xs text-slate-600">
-                      <div className="flex justify-between">
-                        <span>Quantity Procured:</span>
-                        <span className="font-semibold text-slate-800">{activeTrackingOrder.quantity} {activeTrackingOrder.unit}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Negotiated Price:</span>
-                        <span className="font-semibold text-slate-800">${activeTrackingOrder.price}/{activeTrackingOrder.unit === 'Tons' ? 'Ton' : 'Kg'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span className="font-semibold text-slate-900">${(activeTrackingOrder.price * activeTrackingOrder.quantity).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-200">
-                        <span>Freight Service:</span>
-                        <span className="font-semibold text-forest-700">AGRILOG Bulk Freight</span>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-center flex-1">
-                <Truck size={48} className="mb-3 text-slate-200" />
-                <p className="text-sm font-semibold">Select an order on the left to track delivery status</p>
+
+              <button 
+                onClick={() => setIsPostReqModalOpen(true)}
+                className="w-full mt-4 py-2.5 bg-forest-700 hover:bg-forest-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Plus size={14} />
+                Post New Requirement
+              </button>
+            </div>
+
+          </div>
+
+        </main>
+      </div>
+
+      {/* POST REQUIREMENT MODAL */}
+      {isPostReqModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-sm font-bold text-slate-900 font-display">Post Sourcing Requirement</h3>
+              <button onClick={() => setIsPostReqModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePostReqSubmit} className="p-5 space-y-4">
+              {successMsg && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl">
+                  {successMsg}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Commodity Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. Organic Basmati Rice"
+                  value={articleName} 
+                  onChange={(e) => setArticleName(e.target.value)} 
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl" 
+                />
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Category</label>
+                  <select 
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option>Grains</option>
+                    <option>Coffee & Tea</option>
+                    <option>Spices</option>
+                    <option>Cotton</option>
+                    <option>Fruits</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Target Price ($/Unit)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    placeholder="1250"
+                    value={targetPrice} 
+                    onChange={(e) => setTargetPrice(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantity Needed</label>
+                  <input 
+                    type="number" 
+                    required 
+                    placeholder="500"
+                    value={quantity} 
+                    onChange={(e) => setQuantity(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Unit</label>
+                  <select 
+                    value={unit} 
+                    onChange={(e) => setUnit(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option>Tons</option>
+                    <option>Kg</option>
+                    <option>Bales</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setIsPostReqModalOpen(false)} className="flex-1 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-forest-700 text-white text-xs font-bold rounded-xl shadow-xs">Publish Requirement</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
