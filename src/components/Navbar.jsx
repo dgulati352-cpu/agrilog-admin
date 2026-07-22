@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sprout, LogOut, Shield, ChevronDown, User, Menu, X } from 'lucide-react';
+import { Sprout, LogOut, Shield, ChevronDown, User, Menu, X, Check, Globe } from 'lucide-react';
 
 export default function Navbar({ 
   user, 
@@ -9,10 +9,37 @@ export default function Navbar({
   setCurrentView
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState({ code: 'en', label: 'English', flag: '🇺🇸' });
+
+  const languages = [
+    { code: 'en', label: 'English', flag: '🇺🇸' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'hi', label: 'हिंदी', flag: '🇮🇳' },
+    { code: 'ar', label: 'العربية', flag: '🇦🇪' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' }
+  ];
 
   const navigateTo = (view) => {
     setCurrentView(view);
     setIsMobileMenuOpen(false);
+    setIsLangDropdownOpen(false);
+  };
+
+  const handleScrollToSection = (sectionId) => {
+    setIsMobileMenuOpen(false);
+    setIsLangDropdownOpen(false);
+    if (currentView !== 'landing') {
+      setCurrentView('landing');
+      setTimeout(() => {
+        const elem = document.getElementById(sectionId);
+        if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const elem = document.getElementById(sectionId);
+      if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -20,10 +47,13 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           
-            {/* Logo and Main Nav */}
+          {/* Logo and Main Nav */}
           <div className="flex items-center gap-8">
             <div 
-              onClick={() => navigateTo('landing')} 
+              onClick={() => {
+                navigateTo('landing');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }} 
               className="flex items-center gap-2.5 cursor-pointer select-none group"
             >
               <span className="p-1.5 bg-forest-600 group-hover:bg-forest-700 rounded-xl text-white transition-all shadow-sm shadow-forest-100">
@@ -44,7 +74,7 @@ export default function Navbar({
                   <>
                     <button 
                       onClick={() => navigateTo('admin-dashboard')}
-                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                         currentView.startsWith('admin-') 
                           ? 'bg-slate-100 text-slate-950' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -57,7 +87,7 @@ export default function Navbar({
                   <>
                     <button 
                       onClick={() => navigateTo('buyer-dashboard')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'buyer-dashboard' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -67,7 +97,7 @@ export default function Navbar({
                     </button>
                     <button 
                       onClick={() => navigateTo('buyer-post-requirement')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'buyer-post-requirement' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -77,7 +107,7 @@ export default function Navbar({
                     </button>
                     <button 
                       onClick={() => navigateTo('buyer-my-requirements')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'buyer-my-requirements' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -87,7 +117,7 @@ export default function Navbar({
                     </button>
                     <button 
                       onClick={() => navigateTo('buyer-order-tracking')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'buyer-order-tracking' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -100,7 +130,7 @@ export default function Navbar({
                   <>
                     <button 
                       onClick={() => navigateTo('seller-dashboard')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'seller-dashboard' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -110,7 +140,7 @@ export default function Navbar({
                     </button>
                     <button 
                       onClick={() => navigateTo('seller-leads')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'seller-leads' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -120,7 +150,7 @@ export default function Navbar({
                     </button>
                     <button 
                       onClick={() => navigateTo('seller-fulfillment')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'seller-fulfillment' 
                           ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
@@ -132,44 +162,44 @@ export default function Navbar({
                 )}
               </div>
             ) : (
-              /* Guest Header Navigation Links matching reference UI */
+              /* Interactive Guest Header Navigation Links */
               <div className="hidden md:flex items-center gap-6 border-l border-slate-200/60 pl-6">
-                <a
-                  href="#marketplace"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                <button
+                  onClick={() => handleScrollToSection('marketplace')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   Marketplace
-                </a>
-                <a
-                  href="#solutions"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                </button>
+                <button
+                  onClick={() => handleScrollToSection('solutions')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   Solutions
-                </a>
-                <a
-                  href="#export"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                </button>
+                <button
+                  onClick={() => handleScrollToSection('presence')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   Export
-                </a>
-                <a
-                  href="#import"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                </button>
+                <button
+                  onClick={() => handleScrollToSection('marketplace')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   Import
-                </a>
-                <a
-                  href="#resources"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                </button>
+                <button
+                  onClick={() => handleScrollToSection('how-it-works')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   Resources
-                </a>
-                <a
-                  href="#about"
-                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors"
+                </button>
+                <button
+                  onClick={() => handleScrollToSection('sustainability')}
+                  className="text-xs font-semibold text-slate-700 hover:text-forest-700 transition-colors cursor-pointer"
                 >
                   About Us
-                </a>
+                </button>
               </div>
             )}
           </div>
@@ -194,11 +224,43 @@ export default function Navbar({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-full border border-slate-200 cursor-pointer">
-                  <span>🌐 English</span>
-                  <ChevronDown size={12} />
+              <div className="flex items-center gap-3 relative">
+                {/* Language Selector Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full border border-slate-200 transition-all cursor-pointer select-none"
+                  >
+                    <span>{selectedLanguage.flag}</span>
+                    <span>{selectedLanguage.label}</span>
+                    <ChevronDown size={12} className={`transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isLangDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-2xl shadow-xl py-1 z-50 animate-fadeIn">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            setSelectedLanguage(lang);
+                            setIsLangDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2 text-xs text-left hover:bg-forest-50 transition-colors cursor-pointer ${
+                            selectedLanguage.code === lang.code ? 'font-bold text-forest-700 bg-forest-50/60' : 'text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                          {selectedLanguage.code === lang.code && <Check size={14} className="text-forest-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Join Marketplace CTA Button */}
                 <button
                   onClick={() => navigateTo('auth-login')}
                   className="px-4 py-2 bg-gradient-to-r from-earth-700 to-earth-800 hover:from-earth-800 hover:to-earth-900 text-gold-300 border border-gold-500/40 text-xs font-bold rounded-full shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
