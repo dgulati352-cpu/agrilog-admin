@@ -25,7 +25,8 @@ import {
   HeartHandshake, 
   ArrowUpRight,
   BarChart3,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
