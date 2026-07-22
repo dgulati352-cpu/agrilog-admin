@@ -1,5 +1,32 @@
 import React, { useState } from 'react';
-import { Sprout, ShieldCheck, Truck, Users, ArrowRight, Wheat, Lock, Mail, UserPlus, Building, Phone, MapPin } from 'lucide-react';
+import { 
+  Sprout, 
+  Globe, 
+  Users, 
+  Ship, 
+  TrendingUp, 
+  Leaf, 
+  UserPlus, 
+  ShieldCheck, 
+  ClipboardList, 
+  ShoppingBag, 
+  Lock, 
+  Truck, 
+  ArrowRight, 
+  ChevronRight, 
+  Star, 
+  CheckCircle2, 
+  Mail, 
+  Building, 
+  Phone, 
+  MapPin, 
+  Wheat, 
+  Award, 
+  HeartHandshake, 
+  ArrowUpRight,
+  BarChart3,
+  X
+} from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -7,8 +34,9 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }) {
   const [mode, setMode] = useState(initialAuthMode); // 'hero', 'login', 'signup', 'forgot-password'
   const [role, setRole] = useState('BUYER'); // 'BUYER' or 'SELLER'
+  const [selectedMarketplaceTab, setSelectedMarketplaceTab] = useState('All');
   
-  // Form States
+  // Auth Form States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -34,7 +62,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
         if (email.toLowerCase() === 'admin@agrilog.com' && password === 'admin123') {
-          // Auto-seed admin user profile if the auth exists but the document doesn't
           const profileData = {
             uid: user.uid,
             email: email.toLowerCase(),
@@ -55,9 +82,8 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
       }
       
       const profileData = userDoc.data();
-      
       if (profileData.role !== role) {
-        setError(`Account exists, but it is registered as a ${profileData.role.toLowerCase()}. Please toggle 'Access Portal As' accordingly.`);
+        setError(`Account exists, but it is registered as a ${profileData.role.toLowerCase()}. Please switch 'Access Portal As' accordingly.`);
         return;
       }
 
@@ -65,7 +91,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
     } catch (err) {
       console.error(err);
       if (email.toLowerCase() === 'admin@agrilog.com' && password === 'admin123') {
-        // Auto-register admin if login fails
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
@@ -105,7 +130,7 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
     }
 
     if (role !== 'BUYER') {
-      setError('Only Buyers can register accounts. Sellers must be registered by an administrator.');
+      setError('Only Buyers can register accounts directly. Sellers must be invited or approved.');
       return;
     }
 
@@ -159,162 +184,632 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
     }
   };
 
+  // Mock Products data matching the reference image
+  const marketplaceProducts = [
+    {
+      id: 'p1',
+      title: 'Organic Basmati Rice',
+      country: 'India',
+      badge: 'USDA Organic',
+      moq: '500 KG',
+      price: '$850 / MT',
+      category: 'Grains',
+      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&q=80'
+    },
+    {
+      id: 'p2',
+      title: 'Arabica Coffee Beans',
+      country: 'Ethiopia',
+      badge: 'Fair Trade',
+      moq: '200 KG',
+      price: '$4,250 / MT',
+      category: 'Coffee & Tea',
+      image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600&q=80'
+    },
+    {
+      id: 'p3',
+      title: 'Premium Spices',
+      country: 'Sri Lanka',
+      badge: 'Organic Certified',
+      moq: '100 KG',
+      price: '$2,350 / MT',
+      category: 'Spices',
+      image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80'
+    },
+    {
+      id: 'p4',
+      title: 'Natural Cotton',
+      country: 'USA',
+      badge: 'BCI Certified',
+      moq: '1000 KG',
+      price: '$1,620 / MT',
+      category: 'Cotton',
+      image: 'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=600&q=80'
+    },
+    {
+      id: 'p5',
+      title: 'Ceylon Tea',
+      country: 'Sri Lanka',
+      badge: 'Rainforest Alliance',
+      moq: '500 KG',
+      price: '$2,150 / MT',
+      category: 'Coffee & Tea',
+      image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&q=80'
+    },
+    {
+      id: 'p6',
+      title: 'Organic Millets',
+      country: 'India',
+      badge: 'USDA Organic',
+      moq: '300 KG',
+      price: '$780 / MT',
+      category: 'Grains',
+      image: 'https://images.unsplash.com/photo-1627736631481-99d89260a920?w=600&q=80'
+    }
+  ];
+
+  const filteredProducts = selectedMarketplaceTab === 'All' 
+    ? marketplaceProducts 
+    : marketplaceProducts.filter(p => p.category === selectedMarketplaceTab);
+
   return (
-    <div className="bg-slate-50 min-h-[90vh]">
-      {mode === 'hero' ? (
-        /* HERO SECTION */
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-forest-950 to-slate-950 text-white py-20 sm:py-28 px-4">
-          {/* Ambient light overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(85,141,49,0.15),transparent_45%)] pointer-events-none" />
+    <div className="bg-[#FAF9F6] text-slate-900 min-h-screen font-sans selection:bg-gold-500/20">
+      
+      {/* 1. HERO SECTION */}
+      <section className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden bg-forest-950 text-white">
+        {/* Hero Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 transition-transform duration-1000"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80')`
+          }}
+        />
+        {/* Radial Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-forest-950/80 via-forest-950/70 to-forest-950 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.12),transparent_70%)] pointer-events-none" />
+
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-24 pb-16 text-center flex-1 flex flex-col justify-center items-center">
           
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-forest-500/10 border border-forest-500/30 rounded-full text-forest-400 text-xs font-semibold uppercase tracking-wider">
-                <Wheat size={12} />
-                <span>Next-Gen Agri B2B Sourcing</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display leading-[1.1] tracking-tight">
-                Streamline Your Bulk <br />
-                <span className="bg-gradient-to-r from-forest-400 via-forest-300 to-earth-300 bg-clip-text text-transparent">
-                  Agricultural Supply Chain
-                </span>
-              </h1>
-              <p className="text-lg text-slate-300 max-w-2xl leading-relaxed">
-                AGRILOG connects verified industrial buyers and wholesale distributors directly with certified farms and suppliers. Post requirements, compare quotes, and track bulk shipments with full transparency.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button
-                  onClick={() => { setMode('signup'); setRole('BUYER'); }}
-                  className="px-8 py-4 bg-forest-600 hover:bg-forest-500 text-white font-semibold rounded-xl shadow-lg shadow-forest-900/40 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer"
-                >
-                  Register as Buyer
-                  <ArrowRight size={18} />
-                </button>
-                <button
-                  onClick={() => { setMode('login'); setRole('SELLER'); }}
-                  className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer"
-                >
-                  Seller Sign In
-                  <Sprout size={18} />
-                </button>
-              </div>
+          {/* Main Title */}
+          <h1 className="font-serif-title text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-white drop-shadow-md">
+            AGRILOG
+          </h1>
 
-              {/* Trust Badges */}
-              <div className="grid grid-cols-3 gap-6 pt-10 border-t border-slate-800/80 max-w-lg">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-forest-500/10 rounded-xl text-forest-400 border border-forest-500/20">
-                    <ShieldCheck size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-white">100% Verified</h4>
-                    <p className="text-xs text-slate-400">KYC Audited Profiles</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-forest-500/10 rounded-xl text-forest-400 border border-forest-500/20">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-white">Real leads</h4>
-                    <p className="text-xs text-slate-400">Direct connections</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-forest-500/10 rounded-xl text-forest-400 border border-forest-500/20">
-                    <Truck size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-white">Trackable</h4>
-                    <p className="text-xs text-slate-400">Real-time status</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Subtitle with Ornamental Flourish */}
+          <div className="mt-3 flex items-center justify-center gap-3">
+            <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-gold-400/80" />
+            <span className="font-serif-title text-2xl sm:text-3xl text-gold-300 italic font-normal tracking-wide">
+              Connecting Agriculture Beyond Borders
+            </span>
+            <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-gold-400/80" />
+          </div>
 
-            {/* Right Column: Premium Live Trade Index */}
-            <div className="lg:col-span-5 bg-slate-900/45 border border-slate-800/85 p-6 sm:p-8 rounded-2xl backdrop-blur-md shadow-2xl space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 w-32 h-32 bg-forest-500/10 rounded-full blur-2xl pointer-events-none" />
-              
-              <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold font-display text-white flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-                    Live Trade Index
-                  </h3>
-                  <p className="text-[11px] text-slate-400">Real-time agricultural commodity prices & volume</p>
-                </div>
-                <div className="px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700 text-right">
-                  <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Platform Status</span>
-                  <span className="text-[10px] text-emerald-400 font-semibold">Active & Secured</span>
-                </div>
-              </div>
+          {/* Description */}
+          <p className="mt-6 text-base sm:text-lg text-slate-200 max-w-2xl font-light leading-relaxed">
+            Premium B2B platform helping exporters, importers, farmers and buyers trade directly across 50+ countries.
+          </p>
 
-              {/* Ticker Items */}
-              <div className="space-y-3">
-                {[
-                  { name: 'Basmati Rice (1121)', price: '$1,250/Ton', change: '+2.4%', up: true, vol: '340 Tons' },
-                  { name: 'Jyoti Potatoes', price: '$380/Ton', change: '-0.8%', up: false, vol: '180 Tons' },
-                  { name: 'Alphonso Mangoes', price: '$2,800/Ton', change: '+5.1%', up: true, vol: '45 Tons' },
-                  { name: 'Winter Wheat (Hard Red)', price: '$290/Ton', change: '+0.5%', up: true, vol: '1,200 Tons' }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800/50 hover:border-slate-800 rounded-xl transition-all">
-                    <div>
-                      <span className="block text-xs font-semibold text-white">{item.name}</span>
-                      <span className="text-[10px] text-slate-500">Vol: {item.vol}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-xs font-bold font-mono text-slate-200">{item.price}</span>
-                      <span className={`text-[10px] font-semibold ${item.up ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {item.change}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-2.5 pt-2">
-                <div className="bg-slate-950/30 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="block text-[9px] text-slate-500 font-medium">Verified Buyers</span>
-                  <span className="text-sm font-bold text-white">1,420+</span>
-                </div>
-                <div className="bg-slate-950/30 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="block text-[9px] text-slate-500 font-medium">Active Sellers</span>
-                  <span className="text-sm font-bold text-white">850+</span>
-                </div>
-                <div className="bg-slate-950/30 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="block text-[9px] text-slate-500 font-medium">Completed Trades</span>
-                  <span className="text-sm font-bold text-white">9,800+</span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => setMode('login')}
-                  className="w-full py-3 bg-forest-600 hover:bg-forest-500 active:bg-forest-700 text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-forest-900/10 cursor-pointer"
-                >
-                  Access Trading Dashboard
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
+          {/* Hero Action Buttons */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
+            <button
+              onClick={() => setMode('signup')}
+              className="px-8 py-3.5 bg-forest-600 hover:bg-forest-500 text-white font-semibold rounded-full shadow-lg shadow-forest-900/50 flex items-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer border border-forest-500/40 text-sm"
+            >
+              Explore Marketplace
+              <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => { setMode('login'); setRole('SELLER'); }}
+              className="px-8 py-3.5 bg-white/95 hover:bg-white text-slate-900 font-semibold rounded-full shadow-md flex items-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer text-sm"
+            >
+              Become a Seller
+            </button>
           </div>
         </div>
-      ) : (
-        /* AUTH SCREEN */
-        <div className="max-w-md mx-auto py-12 px-4">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
-            {/* Tab selector */}
+
+        {/* Floating Glassmorphic Stats Bar */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 pb-8 w-full">
+          <div className="bg-forest-900/60 backdrop-blur-md border border-gold-500/30 rounded-2xl p-6 shadow-2xl grid grid-cols-2 md:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-forest-700/50 text-center">
+            
+            <div className="flex items-center justify-center gap-3 pt-2 md:pt-0">
+              <Globe className="text-gold-400 stroke-[1.5]" size={28} />
+              <div className="text-left">
+                <span className="block font-serif-title text-2xl font-bold text-white">50+</span>
+                <span className="text-xs text-slate-300 font-medium">Countries</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2 md:pt-0">
+              <Users className="text-gold-400 stroke-[1.5]" size={28} />
+              <div className="text-left">
+                <span className="block font-serif-title text-2xl font-bold text-white">100K+</span>
+                <span className="text-xs text-slate-300 font-medium">Verified Farmers</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2 md:pt-0">
+              <Leaf className="text-gold-400 stroke-[1.5]" size={28} />
+              <div className="text-left">
+                <span className="block font-serif-title text-2xl font-bold text-white">0%</span>
+                <span className="text-xs text-slate-300 font-medium">Middlemen</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2 md:pt-0">
+              <Ship className="text-gold-400 stroke-[1.5]" size={28} />
+              <div className="text-left">
+                <span className="block font-serif-title text-2xl font-bold text-white">24/7</span>
+                <span className="text-xs text-slate-300 font-medium">Global Trade</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 2. TRUSTED BY GLOBAL LEADERS */}
+      <section className="py-12 bg-[#F7F5F0] border-b border-earth-100">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <span className="h-[1px] w-8 bg-earth-300" />
+            <span className="text-xs font-bold uppercase tracking-widest text-earth-700">
+              Trusted by Global Leaders
+            </span>
+            <span className="h-[1px] w-8 bg-earth-300" />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-75 grayscale hover:grayscale-0 transition-all">
+            <span className="font-serif-title font-bold text-xl text-slate-800 tracking-wider">Olam</span>
+            <span className="font-serif-title font-extrabold text-2xl text-slate-800 tracking-tight">Cargill</span>
+            <span className="font-sans font-black text-xl text-slate-800 tracking-widest">ADM</span>
+            <span className="font-serif-title text-sm font-semibold text-slate-800 uppercase tracking-widest">Louis Dreyfus Company</span>
+            <span className="font-display font-extrabold text-xl text-slate-800 lowercase">wilmar</span>
+            <span className="font-serif-title font-extrabold text-lg text-slate-800">ITC Trade</span>
+            <span className="font-sans font-bold text-sm text-slate-800 tracking-wider">SOBHA GAP</span>
+            <span className="font-serif-title text-sm italic font-semibold text-slate-800">bionaturae</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. OUR SOLUTIONS */}
+      <section id="solutions" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14">
+          <div className="flex items-center justify-center gap-2 text-gold-600 mb-2">
+            <span>◆</span>
+            <span className="h-[1px] w-10 bg-gold-400" />
+            <span>◆</span>
+          </div>
+          <h2 className="font-serif-title text-3xl sm:text-4xl font-bold text-slate-900 uppercase tracking-wide">
+            Our Solutions
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            {
+              icon: <Wheat size={26} className="text-gold-600" />,
+              title: 'Agri Innovation',
+              desc: 'Technology driven solutions for modern agriculture.'
+            },
+            {
+              icon: <Globe size={26} className="text-gold-600" />,
+              title: 'Global Marketplace',
+              desc: 'Access 50+ countries and thousands of verified buyers.'
+            },
+            {
+              icon: <Users size={26} className="text-gold-600" />,
+              title: 'Verified Buyers',
+              desc: 'Connect with genuine importers and global businesses.'
+            },
+            {
+              icon: <Ship size={26} className="text-gold-600" />,
+              title: 'Export Logistics',
+              desc: 'End-to-end logistics and documentation support.'
+            },
+            {
+              icon: <TrendingUp size={26} className="text-gold-600" />,
+              title: 'Market Intelligence',
+              desc: 'Real-time market data and price trend analytics.'
+            },
+            {
+              icon: <Leaf size={26} className="text-gold-600" />,
+              title: 'Sustainable Agriculture',
+              desc: 'Empowering farmers and protecting our planet.'
+            }
+          ].map((item, idx) => (
+            <div 
+              key={idx}
+              className="bg-white border border-earth-100/80 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-start text-left group"
+            >
+              <div className="p-3 bg-earth-50 rounded-xl border border-earth-200/60 mb-5 group-hover:bg-gold-50 transition-colors">
+                {item.icon}
+              </div>
+              <h3 className="font-serif-title text-xl font-bold text-slate-900 mb-2">
+                {item.title}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed font-light">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. HOW IT WORKS */}
+      <section id="how-it-works" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-forest-950 border border-gold-500/30 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-2 text-gold-400 mb-2">
+              <span>◆</span>
+              <span className="h-[1px] w-10 bg-gold-400/50" />
+              <span>◆</span>
+            </div>
+            <h2 className="font-serif-title text-3xl sm:text-4xl font-bold text-white uppercase tracking-wide">
+              How It Works
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 relative">
+            {[
+              { num: '1', title: 'Register', icon: <UserPlus size={20} /> },
+              { num: '2', title: 'Verify Products', icon: <ShieldCheck size={20} /> },
+              { num: '3', title: 'List Inventory', icon: <ClipboardList size={20} /> },
+              { num: '4', title: 'Receive Orders', icon: <ShoppingBag size={20} /> },
+              { num: '5', title: 'Secure Payments', icon: <Lock size={20} /> },
+              { num: '6', title: 'Global Shipping', icon: <Ship size={20} /> }
+            ].map((step, idx) => (
+              <div key={idx} className="flex flex-col items-center text-center group">
+                <div className="w-12 h-12 rounded-full border-2 border-gold-400/60 bg-forest-900/80 text-gold-300 font-serif-title font-bold text-base flex items-center justify-center mb-3 shadow-inner group-hover:border-gold-400 group-hover:scale-110 transition-all">
+                  {step.num}
+                </div>
+                <div className="text-gold-400 mb-1.5 opacity-80 group-hover:opacity-100">
+                  {step.icon}
+                </div>
+                <span className="text-xs font-semibold text-slate-200">
+                  {step.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. EXPLORE GLOBAL MARKETPLACE */}
+      <section id="marketplace" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10 border-b border-earth-200/60 pb-6">
+          <div>
+            <h2 className="font-serif-title text-3xl font-bold text-slate-900 uppercase tracking-wide">
+              Explore Global Marketplace
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">Direct listings from verified exporters with transparent pricing</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMode('login')}
+              className="px-4 py-2 bg-white border border-earth-300 hover:bg-earth-50 text-slate-800 rounded-full text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+            >
+              View All Products
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {['All', 'Grains', 'Coffee & Tea', 'Spices', 'Cotton'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedMarketplaceTab(cat)}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                selectedMarketplaceTab === cat
+                  ? 'bg-forest-700 text-white shadow-sm'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Product Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredProducts.map((prod) => (
+            <div 
+              key={prod.id}
+              className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all group flex flex-col"
+            >
+              {/* Product Image */}
+              <div className="h-48 relative overflow-hidden bg-slate-100">
+                <img 
+                  src={prod.image} 
+                  alt={prod.title} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 right-3 px-2.5 py-1 bg-white/90 backdrop-blur-xs text-forest-800 text-[10px] font-bold rounded-full shadow-xs uppercase tracking-wider">
+                  {prod.country}
+                </span>
+              </div>
+
+              {/* Card Details */}
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-serif-title text-lg font-bold text-slate-900 mb-1">
+                    {prod.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-xs text-forest-700 font-semibold mb-4">
+                    <CheckCircle2 size={13} className="text-forest-600" />
+                    <span>{prod.badge}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs py-2 px-3 bg-slate-50 rounded-xl border border-slate-150 mb-4">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Min Order (MOQ)</span>
+                      <span className="font-semibold text-slate-700">{prod.moq}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Direct Price</span>
+                      <span className="font-bold text-forest-700 text-sm">{prod.price}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setMode('login')}
+                  className="w-full py-2.5 bg-earth-50 hover:bg-earth-100 text-earth-800 font-bold rounded-xl text-xs border border-earth-200 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  Quick Quote Offer
+                  <ArrowUpRight size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. GLOBAL PRESENCE */}
+      <section id="presence" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white border border-earth-200 rounded-3xl p-8 lg:p-12 shadow-sm">
+          
+          {/* Left: Map Graphic Representation */}
+          <div className="lg:col-span-6 bg-forest-950 rounded-2xl p-6 relative overflow-hidden min-h-[300px] flex items-center justify-center border border-forest-800 shadow-inner">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(85,141,49,0.2),transparent_70%)]" />
+            
+            {/* World Map SVG Visualizer */}
+            <div className="relative z-10 text-center space-y-4">
+              <Globe size={120} className="mx-auto text-gold-400/40 stroke-[1]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-48 h-48 rounded-full border border-gold-400/30 animate-ping" />
+              </div>
+              <span className="inline-block px-3 py-1 bg-forest-900/90 text-gold-300 text-xs font-bold rounded-full border border-gold-500/40">
+                Connected Trade Routes Active
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Presence Info */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="flex items-center gap-2 text-gold-600">
+              <span>◆</span>
+              <span className="h-[1px] w-8 bg-gold-400" />
+            </div>
+            <h2 className="font-serif-title text-3xl sm:text-4xl font-bold text-slate-900 uppercase tracking-wide">
+              Global Presence
+            </h2>
+
+            <div className="grid grid-cols-2 gap-6 pt-2">
+              <div className="border-l-2 border-gold-500 pl-4">
+                <span className="font-serif-title text-3xl font-bold text-slate-900 block">50+</span>
+                <span className="text-xs text-slate-500 font-semibold uppercase">Countries</span>
+              </div>
+              <div className="border-l-2 border-gold-500 pl-4">
+                <span className="font-serif-title text-3xl font-bold text-slate-900 block">1000+</span>
+                <span className="text-xs text-slate-500 font-semibold uppercase">Exporters</span>
+              </div>
+              <div className="border-l-2 border-gold-500 pl-4">
+                <span className="font-serif-title text-3xl font-bold text-slate-900 block">20K+</span>
+                <span className="text-xs text-slate-500 font-semibold uppercase">Buyers</span>
+              </div>
+              <div className="border-l-2 border-gold-500 pl-4">
+                <span className="font-serif-title text-3xl font-bold text-slate-900 block">500K+</span>
+                <span className="text-xs text-slate-500 font-semibold uppercase">Transactions</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMode('login')}
+              className="mt-4 px-6 py-3 bg-forest-900 hover:bg-forest-800 text-gold-300 font-bold rounded-full text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              Explore Global Network
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. SUSTAINABILITY IS OUR PROMISE */}
+      <section id="sustainability" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
+          <div>
+            <h2 className="font-serif-title text-3xl font-bold text-slate-900 uppercase tracking-wide">
+              Sustainability Is Our Promise
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 max-w-xl">
+              We are building a future where agriculture is profitable, sustainable and empowering for every farmer.
+            </p>
+          </div>
+          <button 
+            onClick={() => setMode('signup')}
+            className="px-5 py-2.5 bg-forest-900 hover:bg-forest-800 text-white rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+          >
+            Our Impact
+            <ChevronRight size={14} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            {
+              title: 'Carbon Conscious',
+              desc: 'We promote eco-friendly farming and low-carbon logistics.',
+              image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80'
+            },
+            {
+              title: 'Organic & Natural',
+              desc: 'Encouraging chemical free farming and healthier communities.',
+              image: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&q=80'
+            },
+            {
+              title: 'Fair Pricing',
+              desc: 'Ensuring farmers get fair value for their hard work.',
+              image: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=600&q=80'
+            },
+            {
+              title: 'Farmer Empowerment',
+              desc: 'Training, financing and technology for a better tomorrow.',
+              image: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&q=80'
+            }
+          ].map((card, idx) => (
+            <div key={idx} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all group">
+              <div className="h-40 overflow-hidden bg-slate-100">
+                <img 
+                  src={card.image} 
+                  alt={card.title} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                />
+              </div>
+              <div className="p-5">
+                <h3 className="font-serif-title font-bold text-slate-900 text-base mb-1.5">
+                  {card.title}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed font-light">
+                  {card.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 8. WHAT OUR PARTNERS SAY */}
+      <section id="testimonials" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-forest-950 border border-gold-500/30 rounded-3xl p-8 sm:p-12 text-white shadow-2xl">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-2 text-gold-400 mb-2">
+              <span>◆</span>
+              <span className="h-[1px] w-10 bg-gold-400/50" />
+              <span>◆</span>
+            </div>
+            <h2 className="font-serif-title text-3xl sm:text-4xl font-bold text-white uppercase tracking-wide">
+              What Our Partners Say
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Rohit Malhotra',
+                role: 'Import Director, GreenLeaf Foods',
+                photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+                quote: 'AGRILOG has transformed how we source agricultural products. The platform is reliable, transparent and efficient.'
+              },
+              {
+                name: 'Emma Roberts',
+                role: 'CEO, Nature\'s Basket Global',
+                photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80',
+                quote: 'The best B2B platform for agri trade. Quality buyers and great support team.'
+              },
+              {
+                name: 'Suresh Patil',
+                role: 'Organic Farmer, Maharashtra',
+                photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+                quote: 'Finally a platform that truly empowers farmers and gives us global opportunities.'
+              }
+            ].map((t, idx) => (
+              <div key={idx} className="bg-forest-900/60 border border-forest-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex text-gold-400 gap-1 text-sm">
+                    {'★'.repeat(5)}
+                  </div>
+                  <p className="text-xs text-slate-200 italic leading-relaxed font-light">
+                    "{t.quote}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-3 border-t border-forest-800/80">
+                  <img src={t.photo} alt={t.name} className="w-10 h-10 rounded-full object-cover border border-gold-400/50" />
+                  <div>
+                    <h4 className="font-serif-title font-bold text-white text-sm">{t.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-medium">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 9. READY TO TRADE GLOBALLY? CTA */}
+      <section className="py-20 bg-forest-950 text-white relative overflow-hidden border-t border-forest-900">
+        <div 
+          className="absolute inset-0 opacity-20 bg-cover bg-center mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80')`
+          }}
+        />
+
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center space-y-6">
+          <div className="w-12 h-12 bg-gold-500/20 text-gold-400 rounded-full flex items-center justify-center mx-auto border border-gold-400/40">
+            <Wheat size={24} />
+          </div>
+
+          <h2 className="font-serif-title text-4xl sm:text-5xl font-bold tracking-tight text-white">
+            Ready to Trade Globally?
+          </h2>
+
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto font-light">
+            Join thousands of farmers and businesses growing together with AGRILOG.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button
+              onClick={() => setMode('signup')}
+              className="px-8 py-3.5 bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-forest-950 font-bold rounded-full shadow-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm"
+            >
+              Join Marketplace
+            </button>
+            <button
+              onClick={() => setMode('login')}
+              className="px-8 py-3.5 bg-transparent hover:bg-white/10 text-white border border-slate-400/60 font-semibold rounded-full transition-all cursor-pointer text-sm"
+            >
+              Contact Sales
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. AUTH / LOGIN MODAL (Rendered when user clicks Sign In / Register / Join) */}
+      {mode !== 'hero' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden relative">
+            <button 
+              onClick={() => { setMode('hero'); setError(''); setSuccessMessage(''); }}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full cursor-pointer z-10"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Header */}
             {mode !== 'forgot-password' && (
               <div className="flex border-b border-slate-100">
                 <button
                   onClick={() => { setMode('login'); setError(''); setSuccessMessage(''); }}
                   className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-all ${
                     mode === 'login' 
-                      ? 'border-forest-600 text-forest-700 bg-forest-50/20' 
-                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'
+                      ? 'border-forest-600 text-forest-700 bg-forest-50/30' 
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Sign In
@@ -323,8 +818,8 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                   onClick={() => { setMode('signup'); setRole('BUYER'); setError(''); setSuccessMessage(''); }}
                   className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-all ${
                     mode === 'signup' 
-                      ? 'border-forest-600 text-forest-700 bg-forest-50/20' 
-                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'
+                      ? 'border-forest-600 text-forest-700 bg-forest-50/30' 
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Create Account
@@ -332,15 +827,15 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
               </div>
             )}
 
-            <div className="p-6 sm:p-8 space-y-6">
+            <div className="p-6 sm:p-8 space-y-5">
               <div>
-                <h2 className="text-2xl font-bold font-display text-slate-900">
+                <h3 className="text-xl font-bold font-serif-title text-slate-900">
                   {mode === 'forgot-password'
                     ? 'Reset Password'
                     : mode === 'login' 
-                      ? 'Welcome Back' 
+                      ? 'Welcome Back to AGRILOG' 
                       : 'Get Started with AGRILOG'}
-                </h2>
+                </h3>
                 <p className="text-xs text-slate-500 mt-1">
                   {mode === 'forgot-password'
                     ? 'Enter your registered email address to receive a reset link.'
@@ -351,13 +846,13 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
               </div>
 
               {successMessage && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-medium">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
                   {successMessage}
                 </div>
               )}
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
                   {error}
                 </div>
               )}
@@ -372,17 +867,17 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                 } 
                 className="space-y-4"
               >
-                {/* ROLE SELECTOR (Register As / Login As Toggle) - Enforce only Buyer for Register/Signup */}
+                {/* Role Switcher */}
                 {mode === 'login' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
                       Access Portal As
                     </label>
                     <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setRole('BUYER')}
-                        className={`py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
+                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
                           role === 'BUYER' 
                             ? 'bg-white text-forest-700 shadow-xs' 
                             : 'text-slate-600 hover:text-slate-900'
@@ -393,7 +888,7 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                       <button
                         type="button"
                         onClick={() => setRole('SELLER')}
-                        className={`py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
+                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
                           role === 'SELLER' 
                             ? 'bg-white text-earth-700 shadow-xs' 
                             : 'text-slate-600 hover:text-slate-900'
@@ -405,73 +900,52 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                   </div>
                 )}
 
-                {/* Form fields for SIGNUP */}
+                {/* Signup Fields */}
                 {mode === 'signup' && (
                   <>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Full Name / Contact Person
-                      </label>
-                      <div className="relative">
-                        <UserPlus size={16} className="absolute left-3 top-3 text-slate-400" />
-                        <input
-                          type="text"
-                          required
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          placeholder="e.g. Rajesh Sharma"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                        />
-                      </div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="e.g. Rajesh Sharma"
+                        className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
+                      />
                     </div>
-
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Company Name
-                      </label>
-                      <div className="relative">
-                        <Building size={16} className="absolute left-3 top-3 text-slate-400" />
-                        <input
-                          type="text"
-                          required
-                          value={company}
-                          onChange={(e) => setCompany(e.target.value)}
-                          placeholder="e.g. Punjab Agro Corp"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                        />
-                      </div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Company Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
+                        placeholder="e.g. Punjab Agro Corp"
+                        className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
+                      />
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Phone Number
-                      </label>
-                      <div className="relative">
-                        <Phone size={16} className="absolute left-3 top-3 text-slate-400" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Phone</label>
                         <input
                           type="tel"
                           required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="e.g. +91 98765 43210"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
+                          placeholder="+91 98765 43210"
+                          className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
                         />
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        Location / State
-                      </label>
-                      <div className="relative">
-                        <MapPin size={16} className="absolute left-3 top-3 text-slate-400" />
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Location</label>
                         <input
                           type="text"
                           required
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
-                          placeholder="e.g. Chandigarh, Punjab"
-                          className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
+                          placeholder="Chandigarh, PB"
+                          className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
                         />
                       </div>
                     </div>
@@ -480,97 +954,50 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. trading@cropcorp.com"
-                      className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                    />
-                  </div>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="trading@cropcorp.com"
+                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
+                  />
                 </div>
 
-                {/* Password (hidden in forgot-password mode) */}
+                {/* Password */}
                 {mode !== 'forgot-password' && (
                   <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Password
-                      </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Password</label>
                       {mode === 'login' && (
                         <button
                           type="button"
                           onClick={() => { setMode('forgot-password'); setError(''); setSuccessMessage(''); }}
-                          className="text-[11px] font-semibold text-forest-600 hover:text-forest-700 hover:underline cursor-pointer"
+                          className="text-[10px] font-semibold text-forest-700 hover:underline cursor-pointer"
                         >
                           Forgot Password?
                         </button>
                       )}
                     </div>
-                    <div className="relative">
-                      <Lock size={16} className="absolute left-3 top-3 text-slate-400" />
-                      <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-forest-600 focus:bg-white transition-all"
-                      />
-                    </div>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-600 focus:outline-hidden"
+                    />
                   </div>
                 )}
 
-                {/* Submit button */}
                 <button
                   type="submit"
-                  className={`w-full py-3 text-white font-bold rounded-xl shadow-md transition-all hover:-translate-y-0.5 cursor-pointer mt-4 ${
-                    role === 'ADMIN'
-                      ? 'bg-slate-900 hover:bg-slate-850 shadow-slate-100'
-                      : role === 'BUYER' 
-                        ? 'bg-forest-600 hover:bg-forest-700 shadow-forest-100' 
-                        : 'bg-earth-600 hover:bg-earth-700 shadow-earth-100'
-                  }`}
+                  className="w-full py-3 bg-forest-700 hover:bg-forest-800 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer text-xs mt-2"
                 >
-                  {mode === 'forgot-password'
-                    ? 'Send Reset Link'
-                    : mode === 'login'
-                      ? 'Sign In to Marketplace'
-                      : 'Create Profile'}
+                  {mode === 'forgot-password' ? 'Send Reset Link' : mode === 'login' ? 'Sign In to Marketplace' : 'Create Profile'}
                 </button>
               </form>
-
-              <div className="text-center pt-4">
-                {mode === 'forgot-password' ? (
-                  <button
-                    onClick={() => {
-                      setMode('login');
-                      setError('');
-                      setSuccessMessage('');
-                    }}
-                    className="text-xs text-forest-600 hover:text-forest-700 font-semibold cursor-pointer"
-                  >
-                    &larr; Back to Sign In
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setMode('hero');
-                      setError('');
-                      setSuccessMessage('');
-                    }}
-                    className="text-xs text-slate-500 hover:text-slate-800"
-                  >
-                    &larr; Back to AGRILOG Home
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>
