@@ -3,7 +3,6 @@ import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import BuyerPanel from './components/BuyerPanel';
 import SellerPanel from './components/SellerPanel';
-import AdminPanel from './components/AdminPanel';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, getDocs } from 'firebase/firestore';
@@ -459,10 +458,9 @@ export default function App() {
   const renderMainContent = () => {
     const isBuyerPage = currentView.startsWith('buyer-');
     const isSellerPage = currentView.startsWith('seller-');
-    const isAdminPage = currentView.startsWith('admin-');
 
     // Route Guarding: Guest trying to visit panels
-    if ((isBuyerPage || isSellerPage || isAdminPage) && !userRole) {
+    if ((isBuyerPage || isSellerPage) && !userRole) {
       return (
         <LandingPage 
           onLoginSuccess={handleLoginSuccess} 
@@ -471,18 +469,8 @@ export default function App() {
       );
     }
 
-    // Route Guarding: Non-Admin trying to visit Admin pages
-    if (isAdminPage && userRole !== 'ADMIN') {
-      return (
-        <AccessDenied 
-          userRole={userRole} 
-          onRedirect={() => setCurrentView(userRole === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard')} 
-        />
-      );
-    }
-
-    // Route Guarding: Buyer trying to visit Seller pages (Admin bypass allowed)
-    if (isSellerPage && userRole !== 'SELLER' && userRole !== 'ADMIN') {
+    // Route Guarding: Buyer trying to visit Seller pages
+    if (isSellerPage && userRole !== 'SELLER') {
       return (
         <AccessDenied 
           userRole={userRole} 
@@ -491,8 +479,8 @@ export default function App() {
       );
     }
 
-    // Route Guarding: Seller trying to visit Buyer pages (Admin bypass allowed)
-    if (isBuyerPage && userRole !== 'BUYER' && userRole !== 'ADMIN') {
+    // Route Guarding: Seller trying to visit Buyer pages
+    if (isBuyerPage && userRole !== 'BUYER') {
       return (
         <AccessDenied 
           userRole={userRole} 
@@ -532,7 +520,7 @@ export default function App() {
       case 'buyer-order-tracking':
         return (
           <BuyerPanel
-            user={impersonatedUser || currentUser}
+            user={currentUser}
             requirements={requirements}
             orders={orders}
             onPostRequirement={handlePostRequirement}
@@ -547,31 +535,11 @@ export default function App() {
       case 'seller-fulfillment':
         return (
           <SellerPanel
-            user={impersonatedUser || currentUser}
+            user={currentUser}
             requirements={requirements}
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onSubmitQuote={handleSubmitQuote}
-            currentSubView={currentView}
-            setCurrentSubView={setCurrentView}
-          />
-        );
-
-      // ADMIN VIEWS
-      case 'admin-dashboard':
-      case 'admin-sellers':
-      case 'admin-buyers':
-      case 'admin-bids':
-        return (
-          <AdminPanel
-            user={currentUser}
-            requirements={requirements}
-            orders={orders}
-            bids={bids}
-            onImpersonate={(impersonatedProfile) => {
-              setImpersonatedUser(impersonatedProfile);
-              setCurrentView(impersonatedProfile.role === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard');
-            }}
             currentSubView={currentView}
             setCurrentSubView={setCurrentView}
           />
@@ -596,21 +564,6 @@ export default function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
       />
-      
-      {impersonatedUser && (
-        <div className="bg-amber-500 text-white font-semibold py-2.5 px-4 text-center text-xs sm:text-sm flex justify-center items-center gap-2 shadow-inner z-50">
-          <span>⚠️ Impersonation Mode: Acting as {impersonatedUser.role.toLowerCase()} - <strong>{impersonatedUser.company}</strong> ({impersonatedUser.name})</span>
-          <button 
-            onClick={() => {
-              setImpersonatedUser(null);
-              setCurrentView('admin-dashboard');
-            }}
-            className="ml-3 bg-white text-amber-700 hover:bg-slate-100 font-bold px-2 py-0.5 rounded text-xs transition-all cursor-pointer"
-          >
-            Return to Admin Panel
-          </button>
-        </div>
-      )}
       
       <main className="flex-grow">
         {renderMainContent()}

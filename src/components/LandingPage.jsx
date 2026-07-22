@@ -61,21 +61,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
       
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
-        if (email.toLowerCase() === 'admin@agrilog.com' && password === 'admin123') {
-          const profileData = {
-            uid: user.uid,
-            email: email.toLowerCase(),
-            name: 'System Administrator',
-            company: 'AGRILOG Global Admin',
-            phone: '+91 99999 99999',
-            location: 'New Delhi, India',
-            role: 'ADMIN',
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(doc(db, 'users', user.uid), profileData);
-          onLoginSuccess(profileData, 'ADMIN');
-          return;
-        }
         await auth.signOut();
         setError('No profile found. Please register an account first.');
         return;
@@ -90,28 +75,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
       onLoginSuccess(profileData, profileData.role);
     } catch (err) {
       console.error(err);
-      if (email.toLowerCase() === 'admin@agrilog.com' && password === 'admin123') {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-          const profileData = {
-            uid: user.uid,
-            email: email.toLowerCase(),
-            name: 'System Administrator',
-            company: 'AGRILOG Global Admin',
-            phone: '+91 99999 99999',
-            location: 'New Delhi, India',
-            role: 'ADMIN',
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(doc(db, 'users', user.uid), profileData);
-          onLoginSuccess(profileData, 'ADMIN');
-          return;
-        } catch (regErr) {
-          console.error("Auto-create admin failed:", regErr);
-        }
-      }
-      
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
       } else {
