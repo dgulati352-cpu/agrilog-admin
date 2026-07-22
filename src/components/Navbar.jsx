@@ -20,20 +20,25 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           
-          {/* Logo and Main Nav */}
+            {/* Logo and Main Nav */}
           <div className="flex items-center gap-8">
             <div 
               onClick={() => navigateTo('landing')} 
-              className="flex items-center gap-2 cursor-pointer font-bold text-xl font-display text-slate-900 select-none"
+              className="flex items-center gap-2.5 cursor-pointer select-none group"
             >
-              <span className="p-1.5 bg-forest-600 rounded-lg text-white">
+              <span className="p-1.5 bg-forest-600 group-hover:bg-forest-700 rounded-xl text-white transition-all shadow-sm shadow-forest-100">
                 <Sprout size={20} className="stroke-[2.5]" />
               </span>
-              <span>AGRI<span className="text-forest-600">LOG</span></span>
+              <span className="font-bold text-xl font-display text-slate-900 tracking-tight">
+                AGRI<span className="text-forest-600">LOG</span>
+              </span>
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-forest-50 text-forest-700 rounded-full border border-forest-150/70">
+                B2B Trade
+              </span>
             </div>
 
-            {/* Desktop Role-Based Links */}
-            {userRole && (
+            {/* Desktop Navigation Links */}
+            {userRole ? (
               <div className="hidden md:flex items-center gap-1">
                 {userRole === 'ADMIN' ? (
                   <>
@@ -54,7 +59,7 @@ export default function Navbar({
                       onClick={() => navigateTo('buyer-dashboard')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'buyer-dashboard' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -64,7 +69,7 @@ export default function Navbar({
                       onClick={() => navigateTo('buyer-post-requirement')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'buyer-post-requirement' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -74,7 +79,7 @@ export default function Navbar({
                       onClick={() => navigateTo('buyer-my-requirements')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'buyer-my-requirements' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -84,7 +89,7 @@ export default function Navbar({
                       onClick={() => navigateTo('buyer-order-tracking')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'buyer-order-tracking' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -97,7 +102,7 @@ export default function Navbar({
                       onClick={() => navigateTo('seller-dashboard')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'seller-dashboard' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -107,7 +112,7 @@ export default function Navbar({
                       onClick={() => navigateTo('seller-leads')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'seller-leads' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -117,7 +122,7 @@ export default function Navbar({
                       onClick={() => navigateTo('seller-fulfillment')}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         currentView === 'seller-fulfillment' 
-                          ? 'bg-forest-50 text-forest-700' 
+                          ? 'bg-forest-50 text-forest-700 font-semibold' 
                           : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50'
                       }`}
                     >
@@ -126,14 +131,33 @@ export default function Navbar({
                   </>
                 )}
               </div>
+            ) : (
+              /* Guest Header Navigation Links */
+              <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-6">
+                <button
+                  onClick={() => navigateTo('landing')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                >
+                  Platform Home
+                </button>
+                <button
+                  onClick={() => navigateTo('auth-login')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                >
+                  Sourcing Leads Feed
+                </button>
+                <button
+                  onClick={() => navigateTo('auth-signup')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                >
+                  Buyer Sourcing
+                </button>
+              </div>
             )}
           </div>
 
-          {/* Right Actions (Role Simulator & User Info) */}
+          {/* Right Actions */}
           <div className="hidden md:flex items-center gap-4">
-            
-
-            {/* User Profile Info / Sign In */}
             {userRole ? (
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                 <div className="flex flex-col text-right">
@@ -146,18 +170,21 @@ export default function Navbar({
                 <button
                   onClick={onLogout}
                   title="Sign Out"
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
                 >
                   <LogOut size={18} />
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => navigateTo('auth-login')}
-                className="px-4 py-2 text-sm font-semibold text-forest-700 hover:text-forest-800 hover:bg-forest-50/50 rounded-xl transition-all"
-              >
-                Sign In / Register
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigateTo('auth-login')}
+                  className="px-4 py-2 bg-forest-600 hover:bg-forest-700 active:bg-forest-800 text-white text-xs font-bold rounded-xl shadow-md shadow-forest-100/60 flex items-center gap-1.5 transition-all hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <User size={14} />
+                  Sign In / Register
+                </button>
+              </div>
             )}
           </div>
 

@@ -70,7 +70,7 @@ const INITIAL_REQUIREMENTS = [
     buyerCompany: 'Midwest Grains Co.',
     buyerPhone: '+1 555-0199',
     buyerLocation: 'Kansas City, Missouri',
-    status: 'fulfilled'
+    status: 'active'
   }
 ];
 
@@ -87,7 +87,7 @@ const INITIAL_ORDERS = [
     buyerCompany: 'Punjab Agro Corp', // So it shows up in default Punjab Agro dashboard
     buyerName: 'Rajesh Sharma',
     buyerLocation: 'Chandigarh, Punjab',
-    sellerName: 'GreenHarvest Organic Farms', // So it shows up in default GreenHarvest dashboard
+    sellerName: 'Green Fields Exports', // Matched default seller company
     status: 'transit', // 'placed' | 'dispatched' | 'transit' | 'delivered'
     lastUpdated: 'July 14, 2026 10:30 AM'
   },
@@ -102,7 +102,7 @@ const INITIAL_ORDERS = [
     buyerCompany: 'Midwest Grains Co.',
     buyerName: 'John Doe',
     buyerLocation: 'Kansas City, Missouri',
-    sellerName: 'GreenHarvest Organic Farms',
+    sellerName: 'Green Fields Exports',
     status: 'delivered',
     lastUpdated: 'July 12, 2026 04:15 PM'
   },
@@ -324,11 +324,17 @@ export default function App() {
 
   // Buyer Action: Post a Crop Sourcing Requirement
   const handlePostRequirement = async (reqData) => {
-    const activeUser = impersonatedUser || currentUser;
-    if (!activeUser?.uid) return;
+    const activeUser = impersonatedUser || currentUser || {
+      uid: 'demo-buyer',
+      name: 'Rajesh Sharma',
+      company: 'Punjab Agro Corp',
+      phone: '+91 98765 43210',
+      location: 'Chandigarh, Punjab'
+    };
 
     const reqId = `REQ-${Math.floor(100 + Math.random() * 900)}`;
     const newRequirement = {
+      id: reqId,
       articleName: reqData.articleName,
       category: reqData.category,
       quantity: Number(reqData.quantity),
@@ -336,17 +342,22 @@ export default function App() {
       deliveryTimeline: reqData.deliveryTimeline,
       targetPrice: Number(reqData.targetPrice),
       currency: reqData.currency || 'USD',
-      buyerUid: activeUser.uid,
-      buyerName: activeUser.name,
-      buyerCompany: activeUser.company,
-      buyerPhone: activeUser.phone,
-      buyerLocation: activeUser.location,
+      buyerUid: activeUser.uid || 'demo-buyer',
+      buyerName: activeUser.name || 'Buyer',
+      buyerCompany: activeUser.company || 'Buyer Co.',
+      buyerPhone: activeUser.phone || '+91 98765 00000',
+      buyerLocation: activeUser.location || 'India',
       status: 'active',
       createdAt: new Date().toISOString()
     };
 
+    // Optimistic local update
+    setRequirements(prev => [newRequirement, ...prev.filter(r => r.id !== reqId)]);
+
     try {
-      await setDoc(doc(db, 'requirements', reqId), newRequirement);
+      if (activeUser?.uid && db) {
+        await setDoc(doc(db, 'requirements', reqId), newRequirement);
+      }
     } catch (err) {
       console.error('Error posting requirement:', err);
     }
@@ -354,58 +365,69 @@ export default function App() {
 
   // Seller Action: Submit commercial quote
   const handleSubmitQuote = async (requirementId, quoteData) => {
-    const activeUser = impersonatedUser || currentUser;
-    if (!activeUser?.uid) return;
+    const activeUser = impersonatedUser || currentUser || {
+      uid: 'demo-seller',
+      name: quoteData.sellerName || 'Green Fields Exports',
+      company: quoteData.sellerCompany || 'Green Fields Exports',
+      phone: '+91 94432 09876',
+      location: 'Ludhiana, Punjab'
+    };
 
-    // 1. Locate the requirement to fetch Buyer information
+    // 1. Locate the requirement
     const req = requirements.find(r => r.id === requirementId);
     if (!req) return;
 
+    // 2. Prepare updated requirement, new order, and new bid
+    const updatedReq = { ...req, status: 'quoted' };
+
+    const orderId = `ORD-${Math.floor(900 + Math.random() * 100)}`;
+    const newOrder = {
+      id: orderId,
+      requirementId: requirementId,
+      articleName: req.articleName,
+      category: req.category,
+      quantity: Number(req.quantity),
+      unit: req.unit,
+      price: Number(quoteData.quotePrice),
+      buyerUid: req.buyerUid || 'seed-buyer-uid',
+      buyerCompany: req.buyerCompany,
+      buyerName: req.buyerName,
+      buyerLocation: req.buyerLocation,
+      sellerUid: activeUser.uid || 'demo-seller',
+      sellerName: quoteData.sellerCompany || activeUser.company || 'Green Fields Exports',
+      status: 'placed',
+      lastUpdated: new Date().toISOString()
+    };
+
+    const bidId = `BID-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newBid = {
+      id: bidId,
+      requirementId: requirementId,
+      articleName: req.articleName,
+      category: req.category,
+      quantity: Number(req.quantity),
+      unit: req.unit,
+      targetPrice: Number(req.targetPrice),
+      bidPrice: Number(quoteData.quotePrice),
+      deliveryDays: Number(quoteData.deliveryDays),
+      sellerUid: activeUser.uid || 'demo-seller',
+      sellerName: quoteData.sellerName || activeUser.name || 'Seller',
+      sellerCompany: quoteData.sellerCompany || activeUser.company || 'Green Fields Exports',
+      sellerMessage: quoteData.sellerMessage,
+      createdAt: new Date().toISOString()
+    };
+
+    // Optimistic local state updates
+    setRequirements(prev => prev.map(r => r.id === requirementId ? updatedReq : r));
+    setOrders(prev => [newOrder, ...prev.filter(o => o.id !== orderId)]);
+    setBids(prev => [newBid, ...prev]);
+
     try {
-      // 2. Update the status of the requirement to 'quoted'
-      await updateDoc(doc(db, 'requirements', requirementId), { status: 'quoted' });
-
-      // 3. Auto-generate a pending order
-      const orderId = `ORD-${Math.floor(900 + Math.random() * 100)}`;
-      const newOrder = {
-        requirementId: requirementId,
-        articleName: req.articleName,
-        category: req.category,
-        quantity: Number(req.quantity),
-        unit: req.unit,
-        price: Number(quoteData.quotePrice),
-        buyerUid: req.buyerUid || 'seed-buyer-uid',
-        buyerCompany: req.buyerCompany,
-        buyerName: req.buyerName,
-        buyerLocation: req.buyerLocation,
-        sellerUid: activeUser.uid,
-        sellerName: quoteData.sellerCompany,
-        status: 'placed',
-        lastUpdated: new Date().toISOString()
-      };
-
-      await setDoc(doc(db, 'orders', orderId), newOrder);
-
-      // 4. Record bid details in the 'bids' collection
-      const bidId = `BID-${Math.floor(1000 + Math.random() * 9000)}`;
-      const newBid = {
-        id: bidId,
-        requirementId: requirementId,
-        articleName: req.articleName,
-        category: req.category,
-        quantity: Number(req.quantity),
-        unit: req.unit,
-        targetPrice: Number(req.targetPrice),
-        bidPrice: Number(quoteData.quotePrice),
-        deliveryDays: Number(quoteData.deliveryDays),
-        sellerUid: activeUser.uid,
-        sellerName: quoteData.sellerName,
-        sellerCompany: quoteData.sellerCompany,
-        sellerMessage: quoteData.sellerMessage,
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(doc(db, 'bids', bidId), newBid);
-
+      if (activeUser?.uid && db) {
+        await updateDoc(doc(db, 'requirements', requirementId), { status: 'quoted' });
+        await setDoc(doc(db, 'orders', orderId), newOrder);
+        await setDoc(doc(db, 'bids', bidId), newBid);
+      }
     } catch (err) {
       console.error('Error submitting quote:', err);
     }
@@ -413,11 +435,20 @@ export default function App() {
 
   // Seller Action: Update shipment tracking stage (placed -> dispatched -> transit -> delivered)
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    // Optimistic local update
+    setOrders(prev => prev.map(ord => 
+      ord.id === orderId 
+        ? { ...ord, status: newStatus, lastUpdated: new Date().toISOString() } 
+        : ord
+    ));
+
     try {
-      await updateDoc(doc(db, 'orders', orderId), {
-        status: newStatus,
-        lastUpdated: new Date().toISOString()
-      });
+      if (db) {
+        await updateDoc(doc(db, 'orders', orderId), {
+          status: newStatus,
+          lastUpdated: new Date().toISOString()
+        });
+      }
     } catch (err) {
       console.error('Error updating order status:', err);
     }

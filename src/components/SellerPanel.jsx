@@ -14,7 +14,10 @@ import {
   ChevronRight, 
   CheckCircle2, 
   X,
-  ShieldCheck
+  ShieldCheck,
+  Copy,
+  PhoneCall,
+  Check
 } from 'lucide-react';
 
 export default function SellerPanel({ 
@@ -30,6 +33,10 @@ export default function SellerPanel({
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [activeLeadForQuote, setActiveLeadForQuote] = useState(null);
   
+  // Contact modal state
+  const [selectedContactLead, setSelectedContactLead] = useState(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
   // Quote form state
   const [quotePrice, setQuotePrice] = useState('');
   const [deliveryDays, setDeliveryDays] = useState('');
@@ -42,7 +49,14 @@ export default function SellerPanel({
     : requirements.filter(req => req.category.toLowerCase() === selectedCategoryFilter.toLowerCase());
 
   // Filter orders fulfilled by this seller
-  const sellerOrders = orders.filter(ord => ord.sellerName === user.company);
+  const sellerOrders = orders.filter(ord => ord.sellerName === user?.company);
+
+  // Copy phone number helper
+  const handleCopyPhone = (phoneNum) => {
+    navigator.clipboard.writeText(phoneNum);
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
 
   // Trigger Quote modal
   const handleOpenQuoteModal = (lead) => {
@@ -61,8 +75,8 @@ export default function SellerPanel({
       quotePrice: parseFloat(quotePrice),
       deliveryDays: parseInt(deliveryDays),
       sellerMessage,
-      sellerName: user.name,
-      sellerCompany: user.company
+      sellerName: user?.name || 'Green Fields Exports',
+      sellerCompany: user?.company || 'Green Fields Exports'
     });
 
     setSuccessMsg('Quote submitted successfully! The buyer has been notified.');
@@ -97,7 +111,7 @@ export default function SellerPanel({
               Merchant & Supply Center
             </h1>
             <p className="text-xs sm:text-sm text-earth-100 mt-1 max-w-xl">
-              Fulfill bulk orders, submit crop pricing quotes, and trace live shipments for <span className="font-semibold text-white">{user.company}</span>.
+              Fulfill bulk orders, submit crop pricing quotes, and trace live shipments for <span className="font-semibold text-white">{user?.company || 'Green Fields Exports'}</span>.
             </p>
           </div>
           <div className="flex gap-2">
@@ -186,7 +200,7 @@ export default function SellerPanel({
             <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="text-lg font-bold font-display text-slate-900 font-display">Hot Sourcing Leads</h3>
+                  <h3 className="text-lg font-bold font-display text-slate-900">Hot Sourcing Leads</h3>
                   <p className="text-xs text-slate-500">Live commodity sourcing leads posted by verified buyers</p>
                 </div>
                 <button
@@ -219,10 +233,9 @@ export default function SellerPanel({
                       </span>
                       <button
                         onClick={() => handleOpenQuoteModal(lead)}
-                        disabled={lead.status === 'fulfilled'}
-                        className="mt-2 px-3 py-1 bg-earth-600 hover:bg-earth-700 text-white rounded-lg text-xs font-semibold shadow-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+                        className="mt-2 px-3 py-1 bg-earth-600 hover:bg-earth-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
                       >
-                        {lead.status === 'quoted' ? 'Update Quote' : 'Quote Price'}
+                        {lead.status === 'quoted' ? 'Update Quote' : 'Quick Quote'}
                       </button>
                     </div>
                   </div>
@@ -234,7 +247,7 @@ export default function SellerPanel({
             <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="text-lg font-bold font-display text-slate-900 font-display">Active Shipments Fulfilling</h3>
+                  <h3 className="text-lg font-bold font-display text-slate-900">Active Shipments Fulfilling</h3>
                   <p className="text-xs text-slate-500">Trace your dispatches and update status</p>
                 </div>
                 <button
@@ -306,11 +319,11 @@ export default function SellerPanel({
             </div>
             
             <div className="flex flex-wrap gap-1">
-              {['All', 'Grains', 'Vegetables', 'Fruits', 'Equipment'].map((cat) => (
+              {['All', 'Grains', 'Vegetables', 'Fruits', 'Equipment', 'Fertilizers'].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     selectedCategoryFilter === cat 
                       ? 'bg-earth-600 text-white shadow-xs' 
                       : 'bg-slate-50 hover:bg-slate-100 text-slate-600'
@@ -377,7 +390,7 @@ export default function SellerPanel({
                       </div>
                     </div>
 
-                    {/* STRICT REQUIREMENT: Explicitly display Buyer details (Name, Company, Phone, Location) */}
+                    {/* Verified Buyer Contact Details */}
                     <div className="border-t border-slate-100 pt-4 mt-2">
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1">
                         <ShieldCheck size={13} className="text-forest-600" />
@@ -410,19 +423,19 @@ export default function SellerPanel({
                   <div className="mt-6 pt-4 border-t border-slate-100 flex gap-2">
                     <button
                       onClick={() => handleOpenQuoteModal(lead)}
-                      disabled={lead.status === 'fulfilled'}
-                      className="flex-1 py-2.5 bg-earth-600 hover:bg-earth-700 text-white font-bold rounded-xl text-xs shadow-md shadow-earth-100/50 flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+                      className="flex-1 py-2.5 bg-earth-600 hover:bg-earth-700 text-white font-bold rounded-xl text-xs shadow-md shadow-earth-100/50 flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 cursor-pointer"
                     >
                       <Send size={13} />
-                      {lead.status === 'quoted' ? 'Submit Revised Quote' : 'Quick Quote'}
+                      {lead.status === 'quoted' ? 'Submit Revised Quote' : lead.status === 'fulfilled' ? 'Supply Extra Quote' : 'Quick Quote'}
                     </button>
-                    <a
-                      href={`tel:${lead.buyerPhone}`}
-                      className="px-3 py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center"
-                      title="Call Buyer Directly"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedContactLead(lead)}
+                      className="px-3 py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center cursor-pointer transition-all"
+                      title="Contact Buyer Directly"
                     >
                       <Phone size={14} />
-                    </a>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -526,7 +539,7 @@ export default function SellerPanel({
               </div>
               <button 
                 onClick={() => setIsQuoteModalOpen(false)}
-                className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500"
+                className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -600,13 +613,13 @@ export default function SellerPanel({
                 <button
                   type="button"
                   onClick={() => setIsQuoteModalOpen(false)}
-                  className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold"
+                  className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-earth-600 hover:bg-earth-700 text-white rounded-xl text-xs font-bold shadow-md shadow-earth-100"
+                  className="flex-1 py-2 bg-earth-600 hover:bg-earth-700 text-white rounded-xl text-xs font-bold shadow-md shadow-earth-100 cursor-pointer"
                 >
                   Send Quote Offer
                 </button>
@@ -615,6 +628,80 @@ export default function SellerPanel({
           </div>
         </div>
       )}
+
+      {/* CONTACT BUYER MODAL */}
+      {selectedContactLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="text-forest-600" size={18} />
+                <h3 className="text-base font-bold text-slate-900 font-display">Verified Buyer Contact</h3>
+              </div>
+              <button 
+                onClick={() => setSelectedContactLead(null)}
+                className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="text-center pb-2 border-b border-slate-100">
+                <div className="w-12 h-12 bg-forest-50 text-forest-700 rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">
+                  {selectedContactLead.buyerName ? selectedContactLead.buyerName.charAt(0) : 'B'}
+                </div>
+                <h4 className="font-bold text-slate-900 text-base">{selectedContactLead.buyerName}</h4>
+                <p className="text-xs font-semibold text-forest-700">{selectedContactLead.buyerCompany}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{selectedContactLead.buyerLocation}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-150 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Requirement Detail</span>
+                <p className="text-xs font-semibold text-slate-800">{selectedContactLead.articleName} ({selectedContactLead.quantity} {selectedContactLead.unit})</p>
+                <p className="text-[11px] text-slate-500">Target Price: ${selectedContactLead.targetPrice}/{selectedContactLead.unit === 'Tons' ? 'Ton' : 'Kg'}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Direct Phone Number</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-3 py-2 bg-slate-100 rounded-xl font-mono text-xs font-bold text-slate-800 border border-slate-200">
+                    {selectedContactLead.buyerPhone || '+91 98765 00000'}
+                  </div>
+                  <button
+                    onClick={() => handleCopyPhone(selectedContactLead.buyerPhone || '+91 98765 00000')}
+                    className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center transition-all cursor-pointer"
+                    title="Copy Phone Number"
+                  >
+                    {copiedPhone ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                {copiedPhone && (
+                  <span className="text-[10px] text-green-600 font-bold mt-1 block">Phone number copied to clipboard!</span>
+                )}
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedContactLead(null)}
+                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  Close
+                </button>
+                <a
+                  href={`tel:${selectedContactLead.buyerPhone}`}
+                  className="flex-1 py-2.5 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold shadow-md shadow-forest-100 flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                >
+                  <PhoneCall size={14} />
+                  Call Buyer
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

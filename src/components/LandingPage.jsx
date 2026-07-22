@@ -378,7 +378,7 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       Access Portal As
                     </label>
-                    <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
+                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setRole('BUYER')}
@@ -400,17 +400,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                         }`}
                       >
                         Seller
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRole('ADMIN')}
-                        className={`py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
-                          role === 'ADMIN' 
-                            ? 'bg-white text-slate-900 shadow-xs' 
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Admin
                       </button>
                     </div>
                   </div>
@@ -556,74 +545,6 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
                       : 'Create Profile'}
                 </button>
               </form>
-
-              {/* Quick Admin Demo Login Button (Only visible in login mode) */}
-              {mode === 'login' && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setError('');
-                      setSuccessMessage('');
-                      setEmail('admin@agrilog.com');
-                      setPassword('admin123');
-                      setRole('ADMIN');
-                      
-                      try {
-                        const userCredential = await signInWithEmailAndPassword(auth, 'admin@agrilog.com', 'admin123');
-                        const user = userCredential.user;
-                        
-                        const userDoc = await getDoc(doc(db, 'users', user.uid));
-                        let profileData;
-                        if (!userDoc.exists()) {
-                          profileData = {
-                            uid: user.uid,
-                            email: 'admin@agrilog.com',
-                            name: 'System Administrator',
-                            company: 'AGRILOG Global Admin',
-                            phone: '+91 99999 99999',
-                            location: 'New Delhi, India',
-                            role: 'ADMIN',
-                            createdAt: new Date().toISOString()
-                          };
-                          await setDoc(doc(db, 'users', user.uid), profileData);
-                        } else {
-                          profileData = userDoc.data();
-                        }
-                        onLoginSuccess(profileData, 'ADMIN');
-                      } catch (err) {
-                        console.error(err);
-                        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                          try {
-                            const regCredential = await createUserWithEmailAndPassword(auth, 'admin@agrilog.com', 'admin123');
-                            const regUser = regCredential.user;
-                            const newProfile = {
-                              uid: regUser.uid,
-                              email: 'admin@agrilog.com',
-                              name: 'System Administrator',
-                              company: 'AGRILOG Global Admin',
-                              phone: '+91 99999 99999',
-                              location: 'New Delhi, India',
-                              role: 'ADMIN',
-                              createdAt: new Date().toISOString()
-                            };
-                            await setDoc(doc(db, 'users', regUser.uid), newProfile);
-                            onLoginSuccess(newProfile, 'ADMIN');
-                          } catch (regErr) {
-                            setError('Failed to auto-create admin: ' + regErr.message);
-                          }
-                        } else {
-                          setError('Failed to login: ' + err.message);
-                        }
-                      }
-                    }}
-                    className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                  >
-                    <Wheat size={14} className="text-forest-400" />
-                    <span>Quick Admin Demo Login</span>
-                  </button>
-                </div>
-              )}
 
               <div className="text-center pt-4">
                 {mode === 'forgot-password' ? (
