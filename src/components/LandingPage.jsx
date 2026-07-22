@@ -252,6 +252,8 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
     ? marketplaceProducts 
     : marketplaceProducts.filter(p => p.category === selectedMarketplaceTab);
 
+  const [isPrdModalOpen, setIsPrdModalOpen] = useState(false);
+
   return (
     <div className="bg-[#FAF9F6] text-slate-900 min-h-screen font-sans selection:bg-gold-500/20">
       
@@ -271,6 +273,16 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
         {/* Hero Content */}
         <div className="relative z-10 max-w-5xl mx-auto px-4 pt-24 pb-16 text-center flex-1 flex flex-col justify-center items-center">
           
+          {/* PRD Badge */}
+          <button
+            onClick={() => setIsPrdModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-1 bg-gold-500/10 border border-gold-400/40 rounded-full text-gold-300 text-xs font-semibold mb-4 hover:bg-gold-500/20 transition-all cursor-pointer shadow-xs"
+          >
+            <FileText size={13} className="text-gold-400" />
+            <span>Official PRD Document v1.0 • View Ecosystem Architecture</span>
+            <ArrowUpRight size={13} />
+          </button>
+
           {/* Main Title */}
           <h1 className="font-serif-title text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-white drop-shadow-md">
             AGRILOG
@@ -287,7 +299,7 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
 
           {/* Description */}
           <p className="mt-6 text-base sm:text-lg text-slate-200 max-w-2xl font-light leading-relaxed">
-            Premium B2B platform helping exporters, importers, farmers and buyers trade directly across 50+ countries.
+            End-to-end multilingual agri ecosystem integrating pre-sowing crop demand advisory, farm equipment rentals, and direct B2B market trade.
           </p>
 
           {/* Hero Action Buttons */}
@@ -300,10 +312,10 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
               <ArrowRight size={16} />
             </button>
             <button
-              onClick={() => { setMode('login'); setRole('SELLER'); }}
+              onClick={() => setIsPrdModalOpen(true)}
               className="px-8 py-3.5 bg-white/95 hover:bg-white text-slate-900 font-semibold rounded-full shadow-md flex items-center gap-2 transition-all hover:-translate-y-0.5 cursor-pointer text-sm"
             >
-              Become a Seller
+              View PRD Blueprint
             </button>
           </div>
         </div>
@@ -1002,6 +1014,155 @@ export default function LandingPage({ onLoginSuccess, initialAuthMode = 'hero' }
           </div>
         </div>
       )}
+      {/* 11. INTERACTIVE PRD DOCUMENT MODAL */}
+      {isPrdModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden relative">
+            
+            {/* PRD Modal Header */}
+            <div className="p-6 bg-forest-950 text-white flex justify-between items-center border-b border-forest-900">
+              <div>
+                <div className="flex items-center gap-2 text-gold-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  <FileText size={14} />
+                  <span>Product Requirement Document (PRD) v1.0</span>
+                </div>
+                <h3 className="text-2xl font-bold font-serif-title text-white">AGRILOG Ecosystem Architecture</h3>
+              </div>
+              <button 
+                onClick={() => setIsPrdModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-forest-900 rounded-full cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable PRD Content */}
+            <div className="p-6 sm:p-8 space-y-8 overflow-y-auto text-xs text-slate-700 leading-relaxed font-light">
+              
+              {/* Executive Summary */}
+              <div className="bg-forest-50/60 border border-forest-200/80 p-5 rounded-2xl space-y-2">
+                <h4 className="text-sm font-bold font-display text-forest-900 uppercase tracking-wide">1. Executive Summary & Core USP</h4>
+                <p>
+                  <strong>AGRILOG</strong> is a single-window, multilingual agricultural platform supporting farmers across all 3 lifecycle stages: <strong>Pre-Sowing (Crop Advisory Engine)</strong>, <strong>Cultivation (Equipment Rental Hub)</strong>, and <strong>Post-Harvest (Direct B2B Market Access)</strong>.
+                </p>
+              </div>
+
+              {/* User Personas Table */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold font-display text-slate-900 uppercase tracking-wide">2. Target User Personas</h4>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-100 text-slate-800 font-bold">
+                      <tr>
+                        <th className="p-3 border-b border-slate-200">Persona</th>
+                        <th className="p-3 border-b border-slate-200">Primary Goal</th>
+                        <th className="p-3 border-b border-slate-200">Core Platform Need</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">Small & Medium Farmers</td>
+                        <td className="p-3">Higher profitability, reduced operational risk</td>
+                        <td className="p-3">Demand-led crop advice, machinery rentals, direct buyers</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">Equipment Owners</td>
+                        <td className="p-3">Monetize machinery during idle periods</td>
+                        <td className="p-3">Direct rental listings & escrow payments</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">Domestic Buyers</td>
+                        <td className="p-3">Reliable quality crop sourcing directly from farms</td>
+                        <td className="p-3">Verified seller listings, transparent pricing</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">Enterprise & Export Buyers</td>
+                        <td className="p-3">Bulk procurement for international markets</td>
+                        <td className="p-3">Scalable supply pipelines & contract management</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Product Modules Breakdown */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold font-display text-slate-900 uppercase tracking-wide">3. Core Product Modules</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border border-slate-200 rounded-2xl bg-white shadow-2xs space-y-2">
+                    <span className="text-[10px] font-bold text-forest-700 uppercase bg-forest-50 px-2 py-0.5 rounded">Module 1: Pre-Sowing</span>
+                    <h5 className="font-bold text-slate-900 text-xs">Crop Advisory Engine</h5>
+                    <p className="text-[11px] text-slate-600">Recommends high-margin crops matching real-time buyer contract demand with vernacular voice assistance.</p>
+                  </div>
+                  <div className="p-4 border border-slate-200 rounded-2xl bg-white shadow-2xs space-y-2">
+                    <span className="text-[10px] font-bold text-earth-700 uppercase bg-earth-50 px-2 py-0.5 rounded">Module 2: Cultivation</span>
+                    <h5 className="font-bold text-slate-900 text-xs">Equipment Rental Hub</h5>
+                    <p className="text-[11px] text-slate-600">Local machinery rental marketplace connecting farmers with nearby tractor and harvester owners.</p>
+                  </div>
+                  <div className="p-4 border border-slate-200 rounded-2xl bg-white shadow-2xs space-y-2">
+                    <span className="text-[10px] font-bold text-blue-700 uppercase bg-blue-50 px-2 py-0.5 rounded">Module 3: Post-Harvest</span>
+                    <h5 className="font-bold text-slate-900 text-xs">Verified B2B Marketplace</h5>
+                    <p className="text-[11px] text-slate-600">Instant digital quote matching, order fulfillment tracking, and escrow payout protection.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Competitive Landscape */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold font-display text-slate-900 uppercase tracking-wide">4. Competitive Landscape</h4>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-100 text-slate-800 font-bold">
+                      <tr>
+                        <th className="p-3 border-b border-slate-200">Platform</th>
+                        <th className="p-3 border-b border-slate-200">Scope</th>
+                        <th className="p-3 border-b border-slate-200">AGRILOG Advantage</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">IndiaMART</td>
+                        <td className="p-3">Generic B2B listing site</td>
+                        <td className="p-3">Specialized agri context, demand matching & logistics support</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-bold text-slate-900">eNAM</td>
+                        <td className="p-3">Govt agricultural trading platform</td>
+                        <td className="p-3">Integrates pre-harvest planning & equipment rentals with trade</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Monetization & Revenue Model */}
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-2">
+                <h4 className="text-sm font-bold font-display text-slate-900 uppercase tracking-wide">5. Business & Revenue Streams</h4>
+                <ul className="list-disc pl-4 space-y-1 font-normal text-slate-700">
+                  <li><strong>Trade Commission:</strong> 1.5% - 3.5% fee on successful B2B crop sales transactions.</li>
+                  <li><strong>Equipment Partnerships:</strong> Revenue share on machine rental bookings and partner listings.</li>
+                  <li><strong>Enterprise Subscriptions:</strong> Premium bulk sourcing feeds for national/international corporate buyers.</li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
+              <span className="text-[11px] text-slate-500 font-medium">AGRILOG Systems Inc. © 2026</span>
+              <button
+                onClick={() => setIsPrdModalOpen(false)}
+                className="px-6 py-2 bg-forest-700 hover:bg-forest-800 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
+              >
+                Close Blueprint
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
