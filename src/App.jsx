@@ -150,12 +150,8 @@ export default function App() {
             
             // Restore or default view
             const savedView = localStorage.getItem('agrilog_current_view');
-            if (!savedView || savedView === 'landing' || savedView.startsWith('auth-')) {
-              if (profileData.role === 'ADMIN') {
-                setCurrentView('admin-dashboard');
-              } else {
-                setCurrentView(profileData.role === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard');
-              }
+            if (!savedView || savedView === 'landing' || savedView.startsWith('auth-') || savedView.startsWith('admin-')) {
+              setCurrentView(profileData.role === 'BUYER' ? 'buyer-dashboard' : 'seller-dashboard');
             } else {
               setCurrentView(savedView);
             }
